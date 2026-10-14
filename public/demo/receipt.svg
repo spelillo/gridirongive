@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 800" role="img" aria-label="Sample receipt">
+  <rect width="600" height="800" fill="#fff"/>
+  <rect x="40" y="40" width="520" height="720" fill="none" stroke="#d9dee3" stroke-width="2"/>
+  <text x="70" y="110" font-family="Arial" font-size="32" font-weight="700" fill="#000">BSN Sports</text>
+  <text x="70" y="150" font-family="Arial" font-size="18" fill="#475e75">Order receipt (sample for the demo)</text>
+  <g font-family="Arial" font-size="18" fill="#223548">
+    <text x="70" y="230">Shoulder Pads, Adult L</text><text x="530" y="230" text-anchor="end">$199.99</text>
+    <text x="70" y="270">Game Jersey, Adult M</text><text x="530" y="270" text-anchor="end">$79.00</text>
+    <text x="70" y="310">Practice Jersey, Adult L</text><text x="530" y="310" text-anchor="end">$29.00</text>
+    <line x1="70" y1="350" x2="530" y2="350" stroke="#d9dee3" stroke-width="2"/>
+    <text x="70" y="390" font-weight="700">Total</text><text x="530" y="390" text-anchor="end" font-weight="700">See purchase</text>
+  </g>
+</svg>

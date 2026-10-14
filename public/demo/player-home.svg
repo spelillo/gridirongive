@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1200" role="img" aria-label="Illustration of a football player in uniform">
+  <rect width="900" height="1200" fill="#eaecee"/>
+  <rect y="1040" width="900" height="160" fill="#d9dee3"/>
+  <!-- legs and cleats -->
+  <path d="M330 760 L300 1060 L395 1060 L440 790 Z" fill="#f5f6f7" stroke="#354a5f" stroke-width="6"/>
+  <path d="M570 760 L600 1060 L505 1060 L460 790 Z" fill="#f5f6f7" stroke="#354a5f" stroke-width="6"/>
+  <rect x="300" y="900" width="95" height="150" fill="#022879"/>
+  <rect x="505" y="900" width="95" height="150" fill="#022879"/>
+  <path d="M270 1060 h135 v30 a14 14 0 0 1 -14 14 h-121 a14 14 0 0 1 -14 -14 z" fill="#000"/>
+  <path d="M495 1060 h135 v30 a14 14 0 0 1 -14 14 h-121 a14 14 0 0 1 -14 -14 z" fill="#000"/>
+  <!-- pants -->
+  <path d="M300 640 L600 640 L615 820 L470 830 L450 760 L430 830 L285 820 Z" fill="#f5f6f7" stroke="#354a5f" stroke-width="6"/>
+  <rect x="300" y="640" width="300" height="34" fill="#0057d2"/>
+  <!-- arms -->
+  <path d="M235 360 L170 620 L235 640 L300 400 Z" fill="#022879"/>
+  <path d="M665 360 L730 620 L665 640 L600 400 Z" fill="#022879"/>
+  <rect x="150" y="610" width="96" height="92" rx="20" fill="#475e75"/>
+  <rect x="654" y="610" width="96" height="92" rx="20" fill="#475e75"/>
+  <!-- jersey -->
+  <path d="M270 330 L630 330 L620 650 L280 650 Z" fill="#022879"/>
+  <rect x="270" y="470" width="360" height="22" fill="#0057d2"/>
+  <!-- shoulder pads -->
+  <path d="M200 330 C230 270 330 250 450 250 C570 250 670 270 700 330 L700 400 C650 380 560 372 450 372 C340 372 250 380 200 400 Z" fill="#0040b0"/>
+  <!-- neck -->
+  <rect x="405" y="230" width="90" height="50" fill="#c9a07a"/>
+  <!-- helmet -->
+  <ellipse cx="450" cy="160" rx="118" ry="112" fill="#0057d2"/>
+  <rect x="445" y="48" width="10" height="224" fill="#ffffff" opacity="0.9"/>
+  <path d="M368 170 h164 v26 h-164 z M380 214 h140 v18 h-140 z" fill="#c9cdd2"/>
+  <path d="M376 150 v96 M524 150 v96" stroke="#c9cdd2" stroke-width="12"/>
+</svg>
