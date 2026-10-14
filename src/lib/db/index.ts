@@ -1,3 +1,4 @@
+import { AsyncLocalStorage } from 'node:async_hooks';
 import 'server-only';
 import { readFileSync, readdirSync, mkdirSync } from 'node:fs';
 import path from 'node:path';
@@ -127,15 +128,31 @@ export { createEmbeddedDriver as __createEmbeddedDriver };
  * apply. Use only in code that decides access itself (public pages behind the
  * team code, webhooks, invites, cron jobs) and select only what it needs.
  */
+/**
+ * Marks code running inside a user transaction. The embedded database has a
+ * single connection, so a system query issued from inside a transaction
+ * would wait for that same transaction to finish. In development we fail
+ * fast instead of hanging.
+ */
+const inUserTx = new AsyncLocalStorage<boolean>();
+function assertNotNested() {
+  if (process.env.NODE_ENV !== 'production' && inUserTx.getStore()) {
+    throw new Error('sys.* was called inside asUser(). Run system queries before or after the user transaction.');
+  }
+}
+
 export const sys = {
   async query<T = Row>(text: string, params?: unknown[]): Promise<T[]> {
+    assertNotNested();
     return (await driver()).query<T>(text, params);
   },
   async one<T = Row>(text: string, params?: unknown[]): Promise<T | null> {
+    assertNotNested();
     const rows = await (await driver()).query<T>(text, params);
     return rows[0] ?? null;
   },
   async tx<T>(fn: (tx: Tx) => Promise<T>): Promise<T> {
+    assertNotNested();
     return (await driver()).transaction((q) => fn(toTx(q)));
   },
 };
@@ -166,7 +183,7 @@ export async function asUser<T>(userId: string, fn: (tx: Tx) => Promise<T>): Pro
       `select set_config('request.jwt.claims', $1, true), set_config('request.jwt.claim.sub', $2, true), set_config('role', 'gg_user', true)`,
       [claims, userId],
     );
-    return fn(toTx(q));
+    return inUserTx.run(true, () => fn(toTx(q)));
   });
 }
 

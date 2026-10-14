@@ -80,7 +80,7 @@ export function GiveForm({
   const [other, setOther] = useState('');
   const [sendExtra, setSendExtra] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
-  const lastMax = useRef(maxCents);
+  const [lastMax, setLastMax] = useState(maxCents);
 
   const rawAmount =
     choice.kind === 'rest' ? (Number.isFinite(maxCents) ? maxCents : 0)
@@ -90,13 +90,12 @@ export function GiveForm({
   const amount = overMax && !sendExtra ? maxCents : rawAmount;
 
   // Live updates: clamp when someone else funds part of this while the sheet is open.
-  useEffect(() => {
-    if (maxCents < lastMax.current && Number.isFinite(lastMax.current)) {
-      if (maxCents <= 0) setNotice(target.kind === 'need' ? 'This item was just fully funded.' : 'Everything here was just funded.');
-      else setNotice('Someone just funded part of this. We updated the amount.');
+  if (maxCents !== lastMax) {
+    if (maxCents < lastMax && Number.isFinite(lastMax)) {
+      setNotice(maxCents <= 0 ? (target.kind === 'need' ? 'This item was just fully funded.' : 'Everything here was just funded.') : 'Someone just funded part of this. We updated the amount.');
     }
-    lastMax.current = maxCents;
-  }, [maxCents, target.kind]);
+    setLastMax(maxCents);
+  }
 
   const chips = useMemo(() => {
     const out: { id: string; label: string; choice: AmountChoice }[] = [];

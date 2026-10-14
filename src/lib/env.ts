@@ -18,7 +18,14 @@ const e = process.env;
 const DEV_SECRET = 'gridiron-give-development-secret-change-me';
 
 export const env = {
-  appUrl: (e.NEXT_PUBLIC_APP_URL ?? (e.VERCEL_URL ? `https://${e.VERCEL_URL}` : 'http://localhost:3000')).replace(/\/$/, ''),
+  appUrl: (
+    e.NEXT_PUBLIC_APP_URL ??
+    (e.VERCEL_ENV === 'production' && e.VERCEL_PROJECT_PRODUCTION_URL
+      ? `https://${e.VERCEL_PROJECT_PRODUCTION_URL}`
+      : e.VERCEL_URL
+        ? `https://${e.VERCEL_URL}`
+        : `http://localhost:${e.PORT ?? 3000}`)
+  ).replace(/\/$/, ''),
   databaseUrl: e.DATABASE_URL || undefined,
   supabaseUrl: e.NEXT_PUBLIC_SUPABASE_URL || undefined,
   supabaseAnonKey: e.NEXT_PUBLIC_SUPABASE_ANON_KEY || undefined,

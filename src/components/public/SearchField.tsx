@@ -50,7 +50,8 @@ export function SearchField({
   const router = useRouter();
   const [q, setQ] = useState(defaultValue);
   const [sport, setSport] = useState(defaultSport);
-  const [items, setItems] = useState<Suggestion[]>([]);
+  const [fetched, setItems] = useState<Suggestion[]>([]);
+  const items = q.trim().length < 2 ? [] : fetched;
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(-1);
   const listId = useId();
@@ -60,10 +61,7 @@ export function SearchField({
 
   useEffect(() => {
     const term = q.trim();
-    if (term.length < 2) {
-      setItems([]);
-      return;
-    }
+    if (term.length < 2) return;
     const id = ++reqRef.current;
     const t = setTimeout(async () => {
       try {

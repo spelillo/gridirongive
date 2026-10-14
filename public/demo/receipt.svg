@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 800" role="img" aria-label="Sample receipt">
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="800" viewBox="0 0 600 800" role="img" aria-label="Sample receipt">
   <rect width="600" height="800" fill="#fff"/>
   <rect x="40" y="40" width="520" height="720" fill="none" stroke="#d9dee3" stroke-width="2"/>
   <text x="70" y="110" font-family="Arial" font-size="32" font-weight="700" fill="#000">BSN Sports</text>

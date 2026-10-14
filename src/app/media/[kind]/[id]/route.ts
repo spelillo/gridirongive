@@ -2,6 +2,8 @@ import { sys } from '@/lib/db';
 import { getObject, type Bucket } from '@/lib/storage';
 import { canViewAthlete, memberAccess } from '@/lib/access';
 import { getUser } from '@/lib/auth/session';
+import { safeEqual } from '@/lib/crypto';
+import { thanksSig } from '@/lib/thanks';
 
 /**
  * Serves stored files after checking who is asking. Nothing in storage is
@@ -50,7 +52,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ kind: st
     key = t.verification_doc_path;
   } else if (kind === 'thanks') {
     const ty = await sys.one<any>(`select team_id, athlete_id, photo_path from thank_yous where id = $1`, [id]);
-    if (!ty || !((await memberAccess(ty.team_id)).staff || (await isFamily(ty.athlete_id)))) return notFound();
+    const sig = new URL(req.url).searchParams.get('sig');
+    const signed = Boolean(sig && safeEqual(sig, thanksSig(id)));
+    if (!ty || !(signed || (await memberAccess(ty.team_id)).staff || (await isFamily(ty.athlete_id)))) return notFound();
     key = ty.photo_path;
   } else if (kind === 'delivery') {
     const n = await sys.one<any>(`select team_id, athlete_id, delivery_photo_path from needs where id = $1`, [id]);

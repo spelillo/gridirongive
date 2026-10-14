@@ -35,10 +35,6 @@ export function CodeEntryForm({ teamId, onDone, compact }: { teamId?: string; on
   const countdown = useCountdown(state.kind === 'locked' ? state.until : null);
   const locked = state.kind === 'locked' && (countdown?.left ?? 1) > 0;
 
-  useEffect(() => {
-    if (state.kind === 'locked' && countdown?.left === 0) setState({ kind: 'idle' });
-  }, [state, countdown?.left]);
-
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!value.trim() || locked) return;

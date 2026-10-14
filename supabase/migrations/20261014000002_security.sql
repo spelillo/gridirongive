@@ -211,6 +211,18 @@ begin
      or new.under_13 <> old.under_13 or new.consent_at is distinct from old.consent_at then
     raise exception 'Only the team staff can change roster details' using errcode = '42501';
   end if;
+  if old.status = 'needs_consent' and new.status <> 'needs_consent' then
+    raise exception 'A parent or guardian needs to give consent first' using errcode = '42501';
+  end if;
+  if athlete_role(old.id) = 'athlete' then
+    if not old.athlete_can_edit then
+      raise exception 'Your parent or guardian manages this profile' using errcode = '42501';
+    end if;
+    if new.show_full_last_name <> old.show_full_last_name or new.athlete_can_edit <> old.athlete_can_edit
+       or (old.status = 'hidden' and new.status <> 'hidden') then
+      raise exception 'Only a parent or guardian can change this' using errcode = '42501';
+    end if;
+  end if;
   select require_profile_approval into needs_approval from teams where id = old.team_id;
   if needs_approval and (
        (new.status = 'live' and old.status <> 'live'
@@ -232,9 +244,14 @@ begin
   if current_user <> 'gg_user' then return new; end if;
   if can_edit_team(coalesce(new.team_id, old.team_id)) then return new; end if;
   if tg_op = 'INSERT' then
-    if new.raised_cents <> 0 or new.status <> 'open' or new.kind <> 'athlete' then
+    if new.raised_cents <> 0 or new.status <> 'open' or new.kind <> 'athlete'
+       or (new.team_id, new.season_id) is distinct from
+          (select a.team_id, t.current_season_id from athletes a join teams t on t.id = a.team_id where a.id = new.athlete_id) then
       raise exception 'Not allowed' using errcode = '42501';
     end if;
+    -- Items an athlete or guardian adds always go to the coach first.
+    new.request_status := 'pending';
+    new.purchase_id := null;
     return new;
   end if;
   if new.raised_cents <> old.raised_cents or new.price_cents is distinct from old.price_cents

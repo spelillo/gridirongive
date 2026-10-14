@@ -33,7 +33,9 @@ export function Sheet({
   const drag = useRef<{ y: number; dy: number } | null>(null);
   const panel = useRef<HTMLDivElement>(null);
   const lockedRef = useRef(locked);
-  lockedRef.current = locked;
+  useEffect(() => {
+    lockedRef.current = locked;
+  }, [locked]);
 
   useEffect(() => {
     const d = ref.current;
