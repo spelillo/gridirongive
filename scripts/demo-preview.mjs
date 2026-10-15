@@ -91,6 +91,7 @@ function checkBehindLogin(base) {
   console.log(`${base} asks for a Vercel login. Checking it with vercel curl.`);
   for (const [path, text] of [['/', 'Demo mode'], ['/search?q=central', 'Central High'], ['/demo', 'Demo'], ['/sign-in', 'Sign in']]) {
     let body = '';
+    let note = '';
     try {
       body = execFileSync('npx', ['--yes', 'vercel@62.0.0', 'curl', path, '--deployment', base, '--yes', '--token', token], {
         encoding: 'utf8',
@@ -99,9 +100,11 @@ function checkBehindLogin(base) {
       });
     } catch (err) {
       body = String(err.stdout ?? '');
+      note = String(err.stderr ?? err.message).trim().split('\n').slice(-6).join('\n    ');
     }
     const ok = body.includes(text);
     console.log(`  ${ok ? 'ok  ' : 'FAIL'} ${path}`);
+    if (!ok) console.log(`    ${note || body.slice(0, 400)}`);
     if (!ok) throw new Error(`${path} did not load as expected`);
   }
   output('DEMO_URL', base);
