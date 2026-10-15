@@ -42,7 +42,7 @@ export function TeamRow({ team }: { team: PublicTeam }) {
             </div>
           </div>
           <Meter raised={team.raised_cents} goal={team.goal_cents} compact label={`${team.name} funding`} />
-          <p className="flex items-center gap-1.5 text-[13px] leading-5 text-ink-meta">
+          <p className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[13px] leading-5 text-ink-meta">
             <Lock size={14} aria-hidden /> Code required to see players
             <span aria-hidden>·</span>
             {team.items_funded} of {team.items_total} items funded

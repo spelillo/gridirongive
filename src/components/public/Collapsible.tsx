@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
+import { ChevronDown } from 'lucide-react';
 import { cn } from '@/components/ui/cn';
 
 /** Text clamped to N lines with "Read more" (only shown when it actually overflows). */
@@ -27,5 +28,21 @@ export function ClampText({ text, lines = 4, className }: { text: string; lines?
         </button>
       )}
     </div>
+  );
+}
+
+/**
+ * One accordion row (FAQ). Built on <details> so it works without
+ * JavaScript, is keyboard operable and announces its state natively.
+ */
+export function Disclosure({ summary, children, id, className }: { summary: React.ReactNode; children: React.ReactNode; id?: string; className?: string }) {
+  return (
+    <details id={id} className={cn('group border-b border-hairline-soft', className)}>
+      <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-4 py-3 text-[16px] leading-6 font-medium text-ink hover:text-primary-deep [&::-webkit-details-marker]:hidden">
+        <span>{summary}</span>
+        <ChevronDown aria-hidden size={20} strokeWidth={1.75} className="shrink-0 text-ink-nav transition-transform group-open:rotate-180" />
+      </summary>
+      <div className="flex flex-col gap-3 pb-4 text-[16px] leading-6 text-ink-body [&_a]:underline">{children}</div>
+    </details>
   );
 }

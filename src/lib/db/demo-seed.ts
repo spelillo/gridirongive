@@ -141,7 +141,7 @@ export async function seedDemo(db: Driver) {
         p.invite && p.invite !== 'not_sent' || consented ? new Date(Date.now() - 38 * 86400000) : null,
         consented ? new Date(Date.now() - 36 * 86400000) : null,
         consented ? new Date(Date.now() - (p.consentDaysAgo ?? 36) * 86400000) : null,
-        ['awaiting_coach', 'live', 'changes_requested'].includes(p.status) ? new Date(Date.now() - 3 * 86400000) : null,
+        live ? new Date(Date.now() - 31 * 86400000) : ['awaiting_coach', 'changes_requested'].includes(p.status) ? new Date(Date.now() - 3 * 86400000) : null,
         consented ? 4 : 0],
     );
     await q(`insert into athlete_contacts (athlete_id, guardian_email, athlete_email) values ($1, $2, $3)`,
@@ -243,6 +243,13 @@ export async function seedDemo(db: Driver) {
     athletes.push(a);
     if (status === 'live' && i > 0) await fundAthlete(central, a.id, fractions[i]);
   }
+
+  // One live athlete has edited their bio since it was approved, so the
+  // Approvals queue shows a "changes pending" diff against the live page.
+  await q(
+    `update athletes set bio = $2, submitted_at = now() - interval '1 day' where id = $1`,
+    [athletes[3].id, "I play tight end and I run track in the spring. My cleats split at the toe last month, so I've been borrowing a pair a size too big. New gloves and cleats would make a real difference."],
+  );
 
   // Jayden: hand-built so the page matches the spec's examples.
   const jayden = athletes[0];

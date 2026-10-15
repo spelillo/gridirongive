@@ -119,6 +119,7 @@ export default async function AthletePage({ params }: Props) {
           supporters: supporters.list.map((s) => ({ id: s.id, name: s.name, message: s.message, createdAt: new Date(s.created_at).toISOString() })),
           supportersTotal: supporters.total,
           preview,
+          reportHref: `/report?team=${encodeURIComponent(team.slug)}&athlete=${encodeURIComponent(athlete.slug)}`,
         }}
       />
     </GiveProvider>

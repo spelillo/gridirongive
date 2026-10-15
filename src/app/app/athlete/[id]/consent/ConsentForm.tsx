@@ -1,5 +1,6 @@
 'use client';
 import { useActionState } from 'react';
+import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Checkbox, Field, Input, Switch } from '@/components/ui/Field';
 import { Banner } from '@/components/ui/Banner';
@@ -41,7 +42,13 @@ export function ConsentForm({ athleteId, first, under13, defaults, already, name
           aria-describedby={f.signed_name ? 'signed_name-error' : undefined}
         />
       </Field>
-      <p className="t-caption">We save your name, the time and your network address with this consent. You can withdraw it at any time.</p>
+      <p className="t-caption">
+        We save your name, the time and your network address with this consent. You can withdraw it at any time. Read the full{' '}
+        <Link href="/guardian-consent" target="_blank">
+          guardian consent policy
+        </Link>
+        .
+      </p>
       <div>
         <Button type="submit" loading={pending} loadingLabel="Saving">
           {already ? 'Update consent' : 'Give consent'}

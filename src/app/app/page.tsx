@@ -1,8 +1,9 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { ChevronRight, Plus } from 'lucide-react';
+import { ChevronRight, Plus, Search } from 'lucide-react';
 import { requireUser } from '@/lib/auth/session';
 import { placesFor } from '@/lib/app/places';
+import { donorGiftCount } from '@/lib/app/donor';
 import { AppShell, AppMain } from '@/components/app/AppShell';
 import { ButtonLink } from '@/components/ui/Button';
 import { AthleteStatusChip, Chip } from '@/components/ui/Chip';
@@ -18,6 +19,9 @@ export default async function AppHome() {
   const total = places.teams.length + places.athletes.length;
   if (total === 1) redirect(places.teams[0] ? `/app/manager/${places.teams[0].id}` : `/app/athlete/${places.athletes[0].id}`);
 
+  const gifts = await donorGiftCount(user);
+  const nothing = total === 0 && gifts === 0 && !user.isAdmin;
+
   const row = 'flex min-h-16 items-center gap-4 px-4 py-3 no-underline hover:bg-chrome';
   return (
     <AppShell user={user}>
@@ -25,7 +29,9 @@ export default async function AppHome() {
         <div className="mx-auto flex max-w-[720px] flex-col gap-8">
           <div className="flex flex-col gap-1">
             <h1 className="t-hero">{user.fullName ? `Hi, ${user.fullName.split(' ')[0]}` : 'Your dashboard'}</h1>
-            <p className="t-body">{total ? 'Pick where you want to work.' : "You don't manage a team or a player page yet."}</p>
+            <p className="t-body">
+              {total ? 'Pick where you want to work.' : gifts ? 'Here is where your gifts are.' : "You don't have a team, a player page or any gifts yet."}
+            </p>
           </div>
 
           {places.teams.length > 0 && (
@@ -74,14 +80,79 @@ export default async function AppHome() {
             </section>
           )}
 
-          <div className="flex flex-col gap-3 border-t border-hairline-soft pt-6 sm:flex-row">
-            <ButtonLink href="/app/manager/new" variant={total ? 'secondary' : 'primary'}>
-              <Plus size={18} aria-hidden /> Set up a team
-            </ButtonLink>
-            <ButtonLink href="/app/donor" variant="tertiary">
-              My gifts
-            </ButtonLink>
-          </div>
+          {gifts > 0 && (
+            <section aria-labelledby="gifts-h" className="flex flex-col gap-3">
+              <h2 id="gifts-h" className="t-subhead">
+                Your gifts
+              </h2>
+              <ul className="rounded-md border border-hairline-soft">
+                <li>
+                  <Link href="/app/donor" className={row}>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-[16px] font-medium text-ink">Donor history</span>
+                      <span className="t-caption">
+                        {gifts} {gifts === 1 ? 'gift' : 'gifts'}, with receipts and gear updates
+                      </span>
+                    </span>
+                    <ChevronRight size={20} aria-hidden className="text-ink-meta" />
+                  </Link>
+                </li>
+              </ul>
+            </section>
+          )}
+
+          {user.isAdmin && (
+            <section aria-labelledby="admin-h" className="flex flex-col gap-3">
+              <h2 id="admin-h" className="t-subhead">
+                Platform
+              </h2>
+              <ul className="rounded-md border border-hairline-soft">
+                <li>
+                  <Link href="/app/admin" className={row}>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-[16px] font-medium text-ink">Admin</span>
+                      <span className="t-caption">Verification, teams, donations, moderation and the gear catalog</span>
+                    </span>
+                    <ChevronRight size={20} aria-hidden className="text-ink-meta" />
+                  </Link>
+                </li>
+              </ul>
+            </section>
+          )}
+
+          {nothing ? (
+            <div className="flex flex-col gap-4 rounded-lg border border-hairline-soft p-6">
+              <div className="flex flex-col gap-1">
+                <h2 className="t-subhead">Want to give?</h2>
+                <p className="t-body">Find a team by school or town, then fund gear for a player.</p>
+                <div className="pt-2">
+                  <ButtonLink href="/search">
+                    <Search size={18} aria-hidden /> Find a team
+                  </ButtonLink>
+                </div>
+              </div>
+              <div className="flex flex-col gap-1 border-t border-hairline-soft pt-4">
+                <h2 className="t-subhead">Coach a team?</h2>
+                <p className="t-body">Set up your team, add the roster and list the gear each player needs.</p>
+                <div className="pt-2">
+                  <ButtonLink href="/app/manager/new" variant="secondary">
+                    <Plus size={18} aria-hidden /> Set up a team
+                  </ButtonLink>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3 border-t border-hairline-soft pt-6 sm:flex-row">
+              <ButtonLink href="/app/manager/new" variant="secondary">
+                <Plus size={18} aria-hidden /> Set up a team
+              </ButtonLink>
+              {gifts === 0 && (
+                <ButtonLink href="/search" variant="tertiary">
+                  Find a team to support
+                </ButtonLink>
+              )}
+            </div>
+          )}
           <p className="t-caption">Got an invite from a coach? Open the link in the email to join your player&apos;s page.</p>
         </div>
       </AppMain>

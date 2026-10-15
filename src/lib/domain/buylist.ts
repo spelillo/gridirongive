@@ -49,9 +49,10 @@ export function toCsv(rows: (string | number | null | undefined)[][]): string {
       r
         .map((v) => {
           const s = v === null || v === undefined ? '' : String(v);
-          // Neutralize spreadsheet formulas in exported user text.
-          const safe = /^[=+\-@\t\r]/.test(s) ? `'${s}` : s;
-          return /[",\n]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
+          // Neutralize spreadsheet formulas in exported user text. Numbers
+          // (a refund of -2500 cents, say) can't carry a formula, so they stay numeric.
+          const safe = typeof v === 'string' && /^[=+\-@\t\r]/.test(s) ? `'${s}` : s;
+          return /[",\r\n]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
         })
         .join(','),
     )

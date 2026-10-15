@@ -122,6 +122,21 @@ export function seasonSummaryEmail(p: { team: string; season: string; totalCents
   };
 }
 
+/** One email holding a day's worth of notifications for people who chose the daily digest. */
+export function digestEmail(p: { items: { subject: string; body: string; link: string | null }[] }): EmailContent {
+  const n = p.items.length;
+  return {
+    subject: `Your Gridiron Give daily summary: ${n} ${n === 1 ? 'update' : 'updates'}`,
+    body: [
+      `Here is what happened since your last summary.`,
+      '',
+      ...p.items.map((i) => [`${i.subject}`, i.body.replace(i.link ?? '\u0000', '').trim(), i.link ?? ''].filter(Boolean).join('\n')),
+      '',
+      'You get this once a day because you chose the daily digest. Change it in your account settings.',
+    ].join('\n\n').replace(/\n{3,}/g, '\n\n'),
+  };
+}
+
 function escapeHtml(s: string) {
   return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 }

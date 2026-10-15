@@ -37,6 +37,8 @@ export function SearchField({
   sports = [],
   onNavigate,
   label = 'Search teams',
+  keepParams,
+  showButton,
 }: {
   size?: 'lg' | 'md';
   defaultValue?: string;
@@ -46,6 +48,10 @@ export function SearchField({
   sports?: { id: string; label: string }[];
   onNavigate?: () => void;
   label?: string;
+  /** Filters to carry over when the search is submitted (the /search page keeps its filters). */
+  keepParams?: Record<string, string>;
+  /** Show a Search button without the sport select. */
+  showButton?: boolean;
 }) {
   const router = useRouter();
   const [q, setQ] = useState(defaultValue);
@@ -88,7 +94,8 @@ export function SearchField({
     e?.preventDefault();
     if (open && active >= 0 && items[active]) return go(items[active].href);
     track('search_submitted', { has_query: q.trim().length > 0, sport: sport || 'all' });
-    const params = new URLSearchParams();
+    const params = new URLSearchParams(keepParams);
+    params.delete('q');
     if (q.trim()) params.set('q', q.trim());
     if (sport) params.set('sport', sport);
     go(`/search${params.size ? `?${params}` : ''}`);
@@ -180,6 +187,11 @@ export function SearchField({
           </ul>
         )}
       </div>
+      {showButton && !withSport && (
+        <button type="submit" className={cn(h, 'shrink-0 rounded-md bg-primary px-5 font-medium text-on-primary hover:bg-primary-deep')}>
+          Search
+        </button>
+      )}
       {withSport && (
         <div className="flex gap-3">
           <label htmlFor={`${inputId}-sport`} className="sr-only">

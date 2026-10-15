@@ -32,6 +32,8 @@ export interface AthleteViewData {
   supporters: { id: string; name: string; message: string | null; createdAt: string }[];
   supportersTotal: number;
   preview?: boolean;
+  /** Link to /report prefilled for this page. */
+  reportHref?: string;
 }
 
 /** The athlete page body (ui-ux-spec 5.4). */
@@ -208,6 +210,11 @@ export function AthleteView({ data }: { data: AthleteViewData }) {
             </section>
           </div>
         </div>
+        {data.reportHref && (
+          <p className="t-caption mt-8 border-t border-hairline-soft pt-4">
+            Something wrong on this page? <Link href={data.reportHref} className="underline">Report this page</Link>
+          </p>
+        )}
       </div>
 
       {/* Sticky action bar on phones and tablets */}

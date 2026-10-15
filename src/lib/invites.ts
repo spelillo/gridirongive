@@ -137,6 +137,12 @@ export async function sendAthleteInvites(athleteId: string, opts: { reminder?: b
     sent++;
   }
   if (sent) {
+    await sys.query(`insert into activity_log (team_id, athlete_id, action, detail) values ($1, $2, $3, $4)`, [
+      a.team_id,
+      a.id,
+      opts.reminder ? 'invite_reminder' : 'invite_sent',
+      JSON.stringify({ recipients: sent }),
+    ]);
     await sys.query(
       `update athletes set invite_status = case when invite_status = 'accepted' then invite_status else 'sent' end, invite_sent_at = now() where id = $1`,
       [a.id],

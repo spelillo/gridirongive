@@ -35,7 +35,7 @@ export function AccountMenu({ user }: { user: { email: string; name: string | nu
           <Link role="menuitem" href="/app/notifications" className={item} onClick={() => setOpen(false)}>Notifications</Link>
           <Link role="menuitem" href="/app/donor" className={item} onClick={() => setOpen(false)}>My gifts</Link>
           <Link role="menuitem" href="/app/account" className={item} onClick={() => setOpen(false)}>Account settings</Link>
-          {user.isAdmin && <Link role="menuitem" href="/admin" className={item} onClick={() => setOpen(false)}>Admin</Link>}
+          {user.isAdmin && <Link role="menuitem" href="/app/admin" className={item} onClick={() => setOpen(false)}>Admin</Link>}
           <div className="my-1 border-t border-hairline-soft" />
           <form action="/auth/sign-out" method="post">
             <button role="menuitem" type="submit" className="flex min-h-11 w-full items-center px-4 text-left text-[15px] text-error hover:bg-error-bg">

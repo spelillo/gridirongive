@@ -76,6 +76,7 @@ export function acceptsGifts(t: { status: string; payouts_status: string }) {
 export interface SearchParams {
   q?: string;
   sport?: string;
+  level?: string;
   state?: string;
   openNeeds?: boolean;
   sort?: 'relevance' | 'nearest' | 'needed' | 'recent';
@@ -93,31 +94,36 @@ export async function searchTeams(p: SearchParams): Promise<{ teams: PublicTeam[
     return `$${params.length}`;
   };
   const q = p.q?.trim().toLowerCase();
-  let rank = '0';
   if (q) {
     const terms = q.split(/\s+/).filter(Boolean).slice(0, 6);
     for (const term of terms) {
       const ph = add(`%${term}%`);
       where.push(`(lower(t.name) like ${ph} or lower(o.name) like ${ph} or lower(coalesce(t.mascot, '')) like ${ph} or lower(t.city) like ${ph} or lower(t.state) = ${add(term)})`);
     }
-    const full = add(`${q}%`);
-    rank = `(case when lower(t.name) like ${full} or lower(o.name) like ${full} then 0 else 1 end)`;
   }
   if (p.sport) where.push(`t.sport = ${add(p.sport)}`);
+  if (p.level) where.push(`t.level = ${add(p.level)}`);
   if (p.state) where.push(`t.state = ${add(p.state.toUpperCase())}`);
   if (p.openNeeds) where.push(`coalesce(tt.raised_cents, 0) < coalesce(tt.goal_cents, 0)`);
-  const zipPh = p.zip ? add(p.zip) : null;
-  const near = zipPh
-    ? `(case when t.zip = ${zipPh} then 0 when left(t.zip, 3) = left(${zipPh}, 3) then 1 else 2 end)`
-    : '0';
+  // The count query only gets the filter parameters, and the order adds only
+  // the parameters it uses: Postgres rejects parameters it can't type.
+  const whereParams = params.length;
   const pct = `(coalesce(tt.raised_cents, 0)::float / greatest(coalesce(tt.goal_cents, 0), 1))`;
-  const order =
-    p.sort === 'nearest' ? `${near}, abs(coalesce(nullif(regexp_replace(t.zip, '\\D', '', 'g'), '')::int, 0) - coalesce(${zipPh ?? 'null'}::int, 0)), t.last_activity_at desc`
-    : p.sort === 'needed' ? `${pct} asc, t.name`
-    : p.sort === 'recent' || !q ? `t.last_activity_at desc, t.name`
-    : `${rank}, t.last_activity_at desc, t.name`;
+  let order: string;
+  if (p.sort === 'nearest') {
+    if (p.zip) {
+      const z = `${add(p.zip)}::text`;
+      order = `(case when t.zip = ${z} then 0 when left(t.zip, 3) = left(${z}, 3) then 1 else 2 end),
+        abs(coalesce(nullif(regexp_replace(t.zip, '\\D', '', 'g'), '')::int, 0) - ${z}::int), t.last_activity_at desc`;
+    } else order = `t.last_activity_at desc, t.name`;
+  } else if (p.sort === 'needed') order = `${pct} asc, t.name`;
+  else if (p.sort === 'recent' || !q) order = `t.last_activity_at desc, t.name`;
+  else {
+    const full = `${add(`${q}%`)}::text`;
+    order = `(case when lower(t.name) like ${full} or lower(o.name) like ${full} then 0 else 1 end), t.last_activity_at desc, t.name`;
+  }
   const whereSql = where.join(' and ');
-  const total = await sys.one<{ n: number }>(`select count(*)::int as n ${TEAM_FROM} where ${whereSql}`, params);
+  const total = await sys.one<{ n: number }>(`select count(*)::int as n ${TEAM_FROM} where ${whereSql}`, params.slice(0, whereParams));
   const limit = add(Math.min(p.limit ?? 20, 50));
   const offset = add(p.offset ?? 0);
   const teams = await sys.query<PublicTeam>(`select ${TEAM_COLUMNS} ${TEAM_FROM} where ${whereSql} order by ${order} limit ${limit} offset ${offset}`, params);

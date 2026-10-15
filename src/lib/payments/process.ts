@@ -172,7 +172,7 @@ export async function reverseDonation(donationId: string, status: 'refunded' | '
     const d = await tx.one<any>(`select * from donations where id = $1 for update`, [donationId]);
     if (!d || (d.status !== 'succeeded' && !(status === 'refunded' && d.status === 'disputed'))) return null;
     await tx.query(`update allocations set reversed_at = now() where donation_id = $1 and reversed_at is null`, [donationId]);
-    await tx.query(`update donations set status = $2, refunded_at = case when $2 = 'refunded' then now() else refunded_at end where id = $1`, [donationId, status]);
+    await tx.query(`update donations set status = $2::text::donation_status, refunded_at = case when $2::text = 'refunded' then now() else refunded_at end where id = $1`, [donationId, status]);
     await tx.query(`update refund_requests set status = 'refunded', resolved_at = now(), resolution_note = coalesce($2, resolution_note) where donation_id = $1 and status = 'open'`, [donationId, note ?? null]);
     if (status === 'refunded') {
       await notify(tx, {

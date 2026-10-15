@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { ShieldCheck } from 'lucide-react';
 import { getTeamBySlug, getRoster, isPubliclyVisible, acceptsGifts } from '@/lib/queries/public';
@@ -21,7 +22,7 @@ import { env, mode } from '@/lib/env';
 import { TrackView } from '@/components/public/TrackView';
 import { LockLink } from './LockLink';
 
-type Props = { params: Promise<{ team: string }>; searchParams: Promise<{ code?: string }> };
+type Props = { params: Promise<{ team: string }>; searchParams: Promise<{ code?: string; expired?: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { team: slug } = await params;
@@ -32,7 +33,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: team.name,
     description,
     alternates: { canonical: `/t/${team.slug}` },
-    openGraph: { title: team.name, description, type: 'website' },
+    // Team links show the team photo (never a player's), or the default image.
+    openGraph: { title: team.name, description, type: 'website', images: [team.has_photo ? `/media/team/${team.id}?v=${team.photo_v}` : '/opengraph-image'] },
   };
 }
 
@@ -44,7 +46,7 @@ const verifiedHow: Record<string, string> = {
 
 export default async function TeamPage({ params, searchParams }: Props) {
   const { team: slug } = await params;
-  const { code } = await searchParams;
+  const { code, expired } = await searchParams;
   if (code) redirect(`/api/unlock/link?slug=${encodeURIComponent(slug)}&code=${encodeURIComponent(code)}`);
   const team = await getTeamBySlug(slug);
   if (!team) notFound();
@@ -65,6 +67,7 @@ export default async function TeamPage({ params, searchParams }: Props) {
         {team.status === 'draft' && <Banner tone="warn">Only your staff can see this page. It goes public when you publish the team.</Banner>}
         {team.status === 'season_closed' && <Banner tone="info">The {team.season_label} season is closed. Thank you to everyone who gave.</Banner>}
         {paused && <Banner tone="warn">This team can&apos;t accept gifts right now.</Banner>}
+        {expired && !unlocked && <Banner tone="warn">That team link was replaced. Enter the current team code to see players.</Banner>}
 
         <header className="grid gap-6 md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] md:items-start">
           <TeamThumb team={team} className="w-full rounded-lg" />
@@ -135,6 +138,10 @@ export default async function TeamPage({ params, searchParams }: Props) {
             </>
           )}
         </section>
+
+        <p className="t-caption border-t border-hairline-soft pt-4">
+          Something wrong on this page? <Link href={`/report?team=${encodeURIComponent(team.slug)}`} className="underline">Report this page</Link>
+        </p>
       </div>
     </GiveProvider>
   );

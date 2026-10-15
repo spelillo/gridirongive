@@ -72,7 +72,7 @@ export async function requireUser(nextPath = '/app'): Promise<SessionUser> {
 }
 
 export async function requireAdmin(): Promise<SessionUser> {
-  const user = await requireUser('/admin');
+  const user = await requireUser('/app/admin');
   if (!user.isAdmin) redirect('/app');
   return user;
 }
