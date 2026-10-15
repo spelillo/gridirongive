@@ -9,8 +9,9 @@
  *
  * What it does, in order. Every step is safe to run again.
  *   1. Reads the Supabase project's API keys and pooler address.
- *   2. Finds the database password: SUPABASE_DB_PASSWORD, else the one the
- *      Supabase integration stored in Vercel, else sets a new one.
+ *   2. Finds a working database password: SUPABASE_DB_PASSWORD, else the
+ *      one the Supabase integration stored in Vercel, else the existing
+ *      DATABASE_URL. Supabase only lets the dashboard reset it.
  *   3. Applies supabase/migrations (scripts/migrate.mjs).
  *   4. Sets the sign-in redirect URLs and the sign-in email templates.
  *   5. With STRIPE_SECRET_KEY: creates the two webhook destinations.
@@ -24,7 +25,7 @@
  *   VERCEL_TEAM            team slug, default synth10
  *   APP_URL                default https://gridirongive-nine.vercel.app
  *   ADMIN_EMAILS           default spelillo11@gmail.com
- *   SUPABASE_DB_PASSWORD   use this password instead of finding or setting one
+ *   SUPABASE_DB_PASSWORD   the database password (Supabase dashboard > Database settings)
  *   STRIPE_SECRET_KEY, STRIPE_PUBLISHABLE_KEY
  *   SKIP_DEPLOY=1          stop after writing the environment variables
  *
@@ -171,7 +172,12 @@ async function main() {
     const pooler = await sb('GET', `/v1/projects/${cfg.ref}/config/database/pooler`).catch(() => null);
     const primary = Array.isArray(pooler) ? (pooler.find((p) => p.database_type === 'PRIMARY') ?? pooler[0]) : pooler;
     poolerHost = primary?.db_host ?? `aws-0-${sbProject.region}.pooler.supabase.com`;
-    if (primary?.db_user) poolerUser = primary.db_user;
+    // The shared pooler wants "postgres.<ref>"; take it from the connection string when given.
+    let user = primary?.db_user;
+    try {
+      if (primary?.connection_string) user = decodeURIComponent(new URL(primary.connection_string.replace('[YOUR-PASSWORD]', 'x')).username) || user;
+    } catch {}
+    if (user) poolerUser = user.includes('.') ? user : `${user}.${cfg.ref}`;
   }
   console.log(`  pooler: ${poolerHost}`);
 
@@ -193,23 +199,24 @@ async function main() {
     } catch {}
   }
   let password;
-  for (const [source, pw] of candidates) {
-    if (await canConnect(urlsFor(pw).session)) {
-      password = pw;
-      note(`Database password: from ${source}`);
-      break;
+  search: for (const [source, pw] of candidates) {
+    // A password reset in the dashboard can take a minute to reach the pooler.
+    const attempts = pw === cfg.dbPassword ? 6 : 1;
+    for (let i = 0; i < attempts; i++) {
+      if (i) await sleep(cfg.waitMs);
+      if (await canConnect(urlsFor(pw).session)) {
+        password = pw;
+        note(`Database password: from ${source}`);
+        break search;
+      }
     }
   }
   if (!password) {
-    password = mask(randomBytes(24).toString('hex'));
-    await sb('POST', `/v1/projects/${cfg.ref}/database/query`, { query: `alter role postgres with password '${password}'` });
-    note('Database password: set a new one (stored only in Vercel as part of DATABASE_URL)');
-    let ok = false;
-    for (let i = 0; i < 12 && !ok; i++) {
-      if (i) await sleep(cfg.waitMs);
-      ok = await canConnect(urlsFor(password).session);
-    }
-    if (!ok) throw new Error('Set a new database password but could not connect with it through the pooler.');
+    // Supabase only lets the dashboard change the postgres password, so it has to be supplied.
+    throw new Error(
+      `No working database password. Reset it at https://supabase.com/dashboard/project/${cfg.ref}/database/settings ` +
+        '(Reset database password), add it as the repository secret SUPABASE_DB_PASSWORD, and run this again.',
+    );
   }
   const urls = urlsFor(password);
   mask(urls.transaction);

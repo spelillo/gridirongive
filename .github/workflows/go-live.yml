@@ -8,7 +8,8 @@ name: Go live
 # Repository secrets (Settings > Secrets and variables > Actions):
 #   SUPABASE_ACCESS_TOKEN  required, from supabase.com/dashboard/account/tokens
 #   VERCEL_TOKEN           required, from vercel.com/account/settings/tokens
-#   STRIPE_SECRET_KEY, STRIPE_PUBLISHABLE_KEY, SUPABASE_DB_PASSWORD  optional
+#   SUPABASE_DB_PASSWORD   the database password (Supabase > Database settings)
+#   STRIPE_SECRET_KEY, STRIPE_PUBLISHABLE_KEY  optional
 
 on:
   workflow_dispatch:
