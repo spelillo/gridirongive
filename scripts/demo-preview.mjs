@@ -54,16 +54,18 @@ function output(name, value) {
   if (e.GITHUB_ENV) appendFileSync(e.GITHUB_ENV, `${name}=${value}\n`);
 }
 
+/** A token scoped to one team can't list teams; name the team by its slug instead. */
 async function findTeam() {
-  const teams = await vc('GET', '/v2/teams?limit=100');
+  const teams = await vc('GET', '/v2/teams?limit=100').catch((err) => {
+    if (String(err.message).includes('(403)')) return null;
+    throw err;
+  });
   const team = (teams?.teams ?? []).find((t) => t.slug === teamSlug || t.id === teamSlug);
-  if (!team) throw new Error(`The Vercel token can't see the team "${teamSlug}".`);
-  teamQuery = `teamId=${encodeURIComponent(team.id)}`;
-  return team;
+  teamQuery = team ? `teamId=${encodeURIComponent(team.id)}` : `slug=${encodeURIComponent(teamSlug)}`;
 }
 
 async function prepare() {
-  const team = await findTeam();
+  await findTeam();
   let project = await vc('GET', `/v9/projects/${encodeURIComponent(projectName)}`);
   if (!project) {
     console.log(`Creating Vercel project ${projectName}`);
@@ -76,7 +78,7 @@ async function prepare() {
   if (live.length) {
     throw new Error(`The demo project has live settings (${live.join(', ')}). Remove them in Vercel so the demo can't reach real data.`);
   }
-  output('VERCEL_ORG_ID', team.id);
+  output('VERCEL_ORG_ID', project.accountId);
   output('VERCEL_PROJECT_ID', project.id);
 }
 
