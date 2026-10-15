@@ -90,6 +90,8 @@
   }
   a { color: var(--color-primary); text-underline-offset: 2px; }
   a:hover { color: var(--color-primary-deep); }
+  /* Links inside running text need more than color to stand out (WCAG 1.4.1). */
+  :where(p, dd, figcaption, small, blockquote, .t-caption, .t-body) a { text-decoration-line: underline; }
   :focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
   button, [role='button'], a, label, summary, select { touch-action: manipulation; }
   button:not(:disabled), [role='button'], summary, select { cursor: pointer; }

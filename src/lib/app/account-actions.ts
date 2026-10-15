@@ -45,9 +45,7 @@ export async function saveProfile(data: { fullName: string; phone: string }): Pr
   const digits = phone.replace(/\D/g, '');
   if (phone && (!/^[+()\d\s.-]+$/.test(phone) || digits.length < 10 || digits.length > 15)) return { ok: false, error: 'Enter a phone number with area code, like 555-123-4567.' };
   try {
-    // Own row and these columns only. Written as system because the original
-    // profiles_update policy recursed (fixed in migration 20261014000091).
-    await sys.query(`update profiles set full_name = nullif($2, ''), phone = nullif($3, '') where id = $1`, [user.id, name, phone]);
+    await asUser(user.id, (tx) => tx.query(`update profiles set full_name = nullif($2, ''), phone = nullif($3, '') where id = $1`, [user.id, name, phone]));
   } catch (err) {
     return { ok: false, error: dbErrorMessage(err) };
   }
@@ -62,8 +60,9 @@ export async function saveEmailPref(category: PrefCategory, value: PrefValue): P
   const user = await requireUser('/app/account');
   if (!CATEGORIES.includes(category) || !VALUES.includes(value)) return { ok: false, error: 'Pick one of the options.' };
   try {
-    // Own row only; see saveProfile for why this runs as system.
-    await sys.query(`update profiles set email_prefs = coalesce(email_prefs, '{}'::jsonb) || jsonb_build_object($2::text, $3::text) where id = $1`, [user.id, category, value]);
+    await asUser(user.id, (tx) =>
+      tx.query(`update profiles set email_prefs = coalesce(email_prefs, '{}'::jsonb) || jsonb_build_object($2::text, $3::text) where id = $1`, [user.id, category, value]),
+    );
   } catch (err) {
     console.error('saveEmailPref failed', err);
     return { ok: false, error: dbErrorMessage(err) };

@@ -2,7 +2,7 @@ import type { ComponentProps, ReactNode } from 'react';
 import { cn } from './cn';
 
 export const inputClass =
-  'block w-full min-h-11 rounded-md border border-hairline bg-canvas px-3 py-2 text-[16px] leading-6 text-ink placeholder:text-ink-meta/80 disabled:bg-chrome disabled:text-ink-meta aria-[invalid=true]:border-error read-only:bg-chrome';
+  'block w-full min-h-11 rounded-md border border-hairline bg-canvas px-3 py-2 text-[16px] leading-6 text-ink placeholder:text-ink-meta/80 disabled:bg-chrome disabled:text-ink-meta aria-[invalid=true]:border-error [&:read-only:not(select)]:bg-chrome';
 
 interface FieldProps {
   id: string;

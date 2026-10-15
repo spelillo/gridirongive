@@ -4,6 +4,7 @@ import { canViewAthlete, memberAccess } from '@/lib/access';
 import { getUser } from '@/lib/auth/session';
 import { safeEqual } from '@/lib/crypto';
 import { thanksSig } from '@/lib/thanks';
+import { deliverySig } from '@/lib/media-links';
 
 /**
  * Serves stored files after checking who is asking. Nothing in storage is
@@ -58,7 +59,10 @@ export async function GET(req: Request, { params }: { params: Promise<{ kind: st
     key = ty.photo_path;
   } else if (kind === 'delivery') {
     const n = await sys.one<any>(`select team_id, athlete_id, delivery_photo_path from needs where id = $1`, [id]);
-    if (!n || !((await memberAccess(n.team_id)).staff || (n.athlete_id && (await isFamily(n.athlete_id))))) return notFound();
+    // Donors open it from their email or giving history through a signed link.
+    const sig = new URL(req.url).searchParams.get('sig');
+    const signed = Boolean(sig && safeEqual(sig, deliverySig(id)));
+    if (!n || !(signed || (await memberAccess(n.team_id)).staff || (n.athlete_id && (await isFamily(n.athlete_id))))) return notFound();
     key = n.delivery_photo_path;
   } else {
     return notFound();

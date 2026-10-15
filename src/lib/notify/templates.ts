@@ -90,10 +90,10 @@ export function purchasedEmail(p: { items: string[]; team: string; vendor: strin
   };
 }
 
-export function deliveredEmail(p: { items: string[]; team: string }): EmailContent {
+export function deliveredEmail(p: { items: string[]; team: string; withPhoto?: boolean }): EmailContent {
   return {
     subject: `Delivered: gear you funded for ${p.team}`,
-    body: `This gear you helped fund has been handed out:\n\n${p.items.map((i) => `- ${i}`).join('\n')}`,
+    body: `This gear you helped fund has been handed out:\n\n${p.items.map((i) => `- ${i}`).join('\n')}${p.withPhoto ? '\n\nThe coach added a photo from the hand-out. Open the link to see it.' : ''}`,
   };
 }
 
@@ -120,6 +120,37 @@ export function seasonSummaryEmail(p: { team: string; season: string; totalCents
     subject: `${p.team} ${p.season}: your season summary`,
     body: `The ${p.team} ${p.season} season is closed. You gave ${p.gifts} ${p.gifts === 1 ? 'gift' : 'gifts'} totaling ${money(p.totalCents)}. Thank you.`,
   };
+}
+
+export function profileNudgeEmail(p: { athlete: string; team: string; changesRequested: boolean }): EmailContent {
+  return p.changesRequested
+    ? {
+        subject: `${p.athlete}'s page for ${p.team} needs a few changes`,
+        body: `The coach asked for changes to ${p.athlete}'s page before it goes live. Supporters can't give to ${p.athlete} until it's updated and sent back.`,
+      }
+    : {
+        subject: `Finish ${p.athlete}'s page for ${p.team}`,
+        body: `Consent is done, but ${p.athlete}'s page hasn't been sent to the coach yet. Add a photo and a short note, check the gear list, then send it for review.`,
+      };
+}
+
+export function weeklyCoachEmail(p: {
+  team: string;
+  raisedCents: number;
+  gifts: number;
+  approvals: number;
+  toBuy: number;
+  notJoined: number;
+  availableCents: number;
+}): EmailContent {
+  const lines = [
+    `Last 7 days: ${p.gifts} ${p.gifts === 1 ? 'gift' : 'gifts'}, ${money(p.raisedCents)} raised.`,
+    `Available to spend: ${money(p.availableCents)}.`,
+  ];
+  if (p.approvals) lines.push(`Waiting on your approval: ${p.approvals}.`);
+  if (p.toBuy) lines.push(`Funded items to buy: ${p.toBuy}.`);
+  if (p.notJoined) lines.push(`Athletes who haven't accepted their invite: ${p.notJoined}.`);
+  return { subject: `${p.team}: your week on Gridiron Give`, body: lines.join('\n') };
 }
 
 /** One email holding a day's worth of notifications for people who chose the daily digest. */

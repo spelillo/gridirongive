@@ -105,7 +105,7 @@ export default async function DonationDetail({ params }: { params: Promise<{ tea
                   </p>
                   <p className="t-caption">
                     {al.athlete_id ? (
-                      <Link href={`${base}/roster/${al.athlete_id}`}>{athleteDisplayName(al)}</Link>
+                      <Link href={`${base}/roster/${al.athlete_id}`} className="underline">{athleteDisplayName(al)}</Link>
                     ) : al.kind === 'team_fund' ? (
                       'Unrestricted, spent where needed'
                     ) : (

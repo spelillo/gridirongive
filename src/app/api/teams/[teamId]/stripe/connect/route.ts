@@ -36,6 +36,8 @@ async function handle(req: Request, teamId: string) {
       const acct = await stripe().accounts.create({
         type: 'express',
         country: 'US',
+        // Destination charges made on behalf of the team need both.
+        capabilities: { card_payments: { requested: true }, transfers: { requested: true } },
         business_type: team.tax_exempt ? 'non_profit' : 'company',
         email: user.email,
         business_profile: { name: team.org_name, product_description: `Equipment fundraising for ${team.name}` },

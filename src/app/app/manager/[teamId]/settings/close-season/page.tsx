@@ -57,7 +57,7 @@ export default async function CloseSeasonPage({ params }: { params: Promise<{ te
         {unspent.length ? (
           <>
             <p className="t-body">
-              <span className="font-medium text-ink tabular">{money(unspentCents)}</span> was given for gear that hasn&apos;t been bought. When you close, it moves to the team fund for next season, and those donors are told in their summary email. If you are still buying some of it, <a href={`${base}/purchases`}>log the purchase</a> first.
+              <span className="font-medium text-ink tabular">{money(unspentCents)}</span> was given for gear that hasn&apos;t been bought. When you close, it moves to the team fund for next season, and those donors are told in their summary email. If you are still buying some of it, <a href={`${base}/purchases`} className="underline">log the purchase</a> first.
             </p>
             <ul className="flex flex-col divide-y divide-hairline-soft rounded-md border border-hairline-soft">
               {unspent.map((n: any) => (

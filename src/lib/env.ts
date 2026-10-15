@@ -33,6 +33,11 @@ export const env = {
   stripeSecretKey: e.STRIPE_SECRET_KEY || undefined,
   stripePublishableKey: e.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || undefined,
   stripeWebhookSecret: e.STRIPE_WEBHOOK_SECRET || undefined,
+  /** Stripe signs each event destination separately: one for platform events, one for connected accounts. */
+  stripeWebhookSecrets: [e.STRIPE_WEBHOOK_SECRET, e.STRIPE_CONNECT_WEBHOOK_SECRET]
+    .flatMap((v) => (v ?? '').split(','))
+    .map((v) => v.trim())
+    .filter(Boolean),
   resendApiKey: e.RESEND_API_KEY || undefined,
   emailFrom: e.EMAIL_FROM ?? 'Gridiron Give <notifications@gridirongive.com>',
   appSecret: e.APP_SECRET || DEV_SECRET,

@@ -170,7 +170,7 @@ export default async function DonorPage() {
                             </div>
                             {u.body && <p className={u.kind === 'thanks' ? 'text-[15px] leading-[22px] text-ink-body' : 't-caption'}>{u.kind === 'thanks' ? `“${u.body}”` : u.body}</p>}
                             {u.photoHref && (
-                              <img src={u.photoHref} alt="Photo sent with the thank-you note" className="mt-1 max-h-48 w-auto max-w-full rounded-md border border-hairline-soft object-cover" loading="lazy" />
+                              <img src={u.photoHref} alt={u.kind === 'delivered' ? 'Photo from the gear hand-out' : 'Photo sent with the thank-you note'} className="mt-1 max-h-48 w-auto max-w-full rounded-md border border-hairline-soft object-cover" loading="lazy" />
                             )}
                           </div>
                         </li>

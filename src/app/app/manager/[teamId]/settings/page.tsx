@@ -57,7 +57,7 @@ export default async function SettingsPage({ params }: { params: Promise<{ teamI
             <div>
               <p className="font-medium text-ink">Team code</p>
               <p className="t-caption">
-                Change it if it was posted publicly. See it in the <Link href={`/app/manager/${teamId}/share`}>share kit</Link>.
+                Change it if it was posted publicly. See it in the <Link href={`/app/manager/${teamId}/share`} className="underline">share kit</Link>.
               </p>
             </div>
             <ChangeCode teamId={teamId} />

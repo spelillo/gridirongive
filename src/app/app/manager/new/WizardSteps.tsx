@@ -233,7 +233,9 @@ export function TeamStep({ teamId, sports, title, appHost, initial }: { teamId: 
     const lvl = LEVELS.find((l) => l[0] === level)?.[1] ?? '';
     return { name: short ? `${short} ${lvl} ${cap(sport)}` : '', slug: short ? slugify(`${short} ${level === 'varsity' ? '' : level} ${sport}`) : '' };
   };
+  const clear = (...keys: string[]) => setErrors((e) => (keys.some((k) => e[k]) ? Object.fromEntries(Object.entries(e).filter(([k]) => !keys.includes(k))) : e));
   const update = (patch: Partial<TeamInitial>, orgName = orgLabel) => {
+    if (orgName && !touched.name) clear('team-name', 'slug');
     setV((cur) => {
       const next = { ...cur, ...patch };
       const a = auto(orgName, next.level, next.sport);
@@ -327,7 +329,10 @@ export function TeamStep({ teamId, sports, title, appHost, initial }: { teamId: 
             error={errors.school}
             onPick={(o) => {
               setOrg(o);
-              if (o) update({}, o.name);
+              if (o) {
+                clear('school');
+                update({}, o.name);
+              }
             }}
           />
           {org && (
@@ -371,6 +376,7 @@ export function TeamStep({ teamId, sports, title, appHost, initial }: { teamId: 
           placeholder="Central High Varsity Football"
           onChange={(e) => {
             setTouched((t) => ({ ...t, name: true }));
+            clear('team-name');
             const name = e.target.value;
             setV((cur) => ({ ...cur, name, slug: touched.slug || teamId ? cur.slug : slugify(name) }));
           }}
@@ -395,6 +401,7 @@ export function TeamStep({ teamId, sports, title, appHost, initial }: { teamId: 
           value={v.slug}
           maxLength={60}
           onChange={(e) => {
+            clear('slug');
             setTouched((t) => ({ ...t, slug: true }));
             setV({ ...v, slug: slugify(e.target.value.replace(/\s+/g, '-')) || e.target.value.toLowerCase() });
           }}
@@ -404,7 +411,7 @@ export function TeamStep({ teamId, sports, title, appHost, initial }: { teamId: 
       </Field>
       <div className="grid gap-4 sm:grid-cols-3">
         <Field id="season-label" label="Season" required error={errors['season-label']}>
-          <Input id="season-label" value={v.seasonLabel} maxLength={40} onChange={(e) => setV({ ...v, seasonLabel: e.target.value })} aria-invalid={Boolean(errors['season-label']) || undefined} aria-describedby={describedBy('season-label', errors['season-label'])} />
+          <Input id="season-label" value={v.seasonLabel} maxLength={40} onChange={(e) => { clear('season-label'); setV({ ...v, seasonLabel: e.target.value }); }} aria-invalid={Boolean(errors['season-label']) || undefined} aria-describedby={describedBy('season-label', errors['season-label'])} />
         </Field>
         <Field id="starts-on" label="Starts" optional>
           <Input id="starts-on" type="date" value={v.startsOn} onChange={(e) => setV({ ...v, startsOn: e.target.value })} />

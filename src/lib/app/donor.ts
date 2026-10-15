@@ -4,6 +4,7 @@ import type { SessionUser } from '@/lib/auth/session';
 import { athleteDisplayName } from '@/lib/domain/names';
 import { receiptSig } from '@/lib/crypto';
 import { thanksSig } from '@/lib/thanks';
+import { deliveryPhotoPath } from '@/lib/media-links';
 
 export interface DonorGift {
   id: string;
@@ -13,7 +14,7 @@ export interface DonorGift {
   totalCents: number;
   giftCents: number;
   receiptHref: string;
-  items: { needId: string; name: string; athlete: string | null; amountCents: number; status: string; purchasedAt: Date | null; deliveredAt: Date | null }[];
+  items: { needId: string; name: string; athlete: string | null; amountCents: number; status: string; purchasedAt: Date | null; deliveredAt: Date | null; hasPhoto?: boolean }[];
 }
 
 export interface DonorUpdate {
@@ -61,7 +62,7 @@ export async function donorHistory(user: SessionUser): Promise<{ gifts: DonorGif
   const ids = donations.map((d) => d.id as string);
   if (!ids.length) return { gifts: [], updates: [] };
   const allocs = await sys.query<any>(
-    `select al.donation_id, al.need_id, sum(al.amount_cents)::int as amount_cents, n.name, n.kind, n.status, n.purchased_at, n.delivered_at, n.athlete_id,
+    `select al.donation_id, al.need_id, sum(al.amount_cents)::int as amount_cents, n.name, n.kind, n.status, n.purchased_at, n.delivered_at, n.delivery_photo_path is not null as has_photo, n.athlete_id,
        a.first_name, a.last_name, a.pub_preferred_name, a.show_full_last_name, a.status as a_status, a.archived_at is not null as a_archived
      from allocations al join needs n on n.id = al.need_id left join athletes a on a.id = n.athlete_id
      where al.donation_id = any($1::uuid[])
@@ -89,6 +90,7 @@ export async function donorHistory(user: SessionUser): Promise<{ gifts: DonorGif
           status: a.status,
           purchasedAt: a.purchased_at,
           deliveredAt: a.delivered_at,
+          hasPhoto: a.has_photo,
         }))
       : lines
           .filter((l) => l.donation_id === d.id)
@@ -122,7 +124,7 @@ export async function donorHistory(user: SessionUser): Promise<{ gifts: DonorGif
       seen.add(it.needId);
       const label = it.athlete ? `${it.name} for ${it.athlete}` : it.name;
       if (it.purchasedAt) updates.push({ key: `p-${it.needId}`, date: it.purchasedAt, kind: 'purchased', title: `${label} was purchased`, body: `${g.team.name} bought the gear you helped fund.`, photoHref: null });
-      if (it.deliveredAt) updates.push({ key: `d-${it.needId}`, date: it.deliveredAt, kind: 'delivered', title: `${label} was delivered`, body: 'The gear was handed out.', photoHref: null });
+      if (it.deliveredAt) updates.push({ key: `d-${it.needId}`, date: it.deliveredAt, kind: 'delivered', title: `${label} was delivered`, body: 'The gear was handed out.', photoHref: it.hasPhoto ? deliveryPhotoPath(it.needId) : null });
     }
   }
   const needIds = [...seen].filter((s) => !s.startsWith('line-'));

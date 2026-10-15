@@ -31,6 +31,7 @@ export const PREF_CATEGORY: Record<string, PrefCategory> = {
   overflow: 'donations',
   approval_needed: 'approvals',
   invite_resend: 'approvals',
+  weekly_summary: 'updates',
 };
 
 /**

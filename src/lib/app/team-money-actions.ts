@@ -10,6 +10,7 @@ import { money, parseDollarsToCents } from '@/lib/domain/money';
 import { env } from '@/lib/env';
 import { broadcastTeam } from '@/lib/realtime';
 import { teamFund } from '@/lib/app/team-money';
+import { deliveryPhotoPath } from '@/lib/media-links';
 
 export type Result = { ok: true; message?: string; id?: string } | { ok: false; error: string; field?: string };
 
@@ -35,11 +36,12 @@ async function donorsOf(needIds: string[]) {
      where al.need_id = any($1::uuid[]) and al.reversed_at is null and d.status = 'succeeded'`,
     [needIds],
   );
-  const byEmail = new Map<string, { userId: string | null; items: Set<string> }>();
+  const byEmail = new Map<string, { userId: string | null; items: Set<string>; needIds: string[] }>();
   for (const r of rows) {
     const label = r.first_name ? `${r.name} for ${athleteDisplayName(r)}` : r.name;
-    const e = byEmail.get(r.email) ?? { userId: r.donor_user_id, items: new Set<string>() };
+    const e = byEmail.get(r.email) ?? { userId: r.donor_user_id, items: new Set<string>(), needIds: [] as string[] };
     e.items.add(label);
+    if (!e.needIds.includes(r.need_id)) e.needIds.push(r.need_id);
     byEmail.set(r.email, e);
   }
   return byEmail;
@@ -245,8 +247,10 @@ export async function markDelivered(teamId: string, needIds: string[], photoKey?
     await sys.query(`insert into analytics_events (name, props) values ('delivery_marked', $1)`, [JSON.stringify({ team_id: teamId, needs: ids.length })]);
     const team = await teamName(teamId);
     for (const [email, d] of await donorsOf(ids)) {
-      const tpl = deliveredEmail({ items: [...d.items], team });
-      await notify(sys, { email, userId: d.userId, kind: 'delivered', subject: tpl.subject, body: tpl.body, inApp: Boolean(d.userId) });
+      const tpl = deliveredEmail({ items: [...d.items], team, withPhoto: Boolean(photo) });
+      // Every item in this delivery shares the photo; the link is signed for one of the donor's items.
+      const link = photo ? `${env.appUrl}${deliveryPhotoPath(d.needIds[0])}` : null;
+      await notify(sys, { email, userId: d.userId, kind: 'delivered', subject: tpl.subject, body: tpl.body, link, inApp: Boolean(d.userId) });
     }
     flushSoon();
     await broadcastTeam(teamId).catch(() => {});

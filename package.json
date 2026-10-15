@@ -16,6 +16,7 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "db:reset-demo": "node scripts/reset-demo.mjs",
+    "db:migrate": "node scripts/migrate.mjs",
     "check": "npm run typecheck && npm run lint && npm run test"
   },
   "dependencies": {

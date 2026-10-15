@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { freshDb } from '../support/db';
-import { demoIds, createUser, addMember } from '../support/fixtures';
+import { demoIds, createUser, addMember, pgCode } from '../support/fixtures';
 import { asUser, type Driver } from '@/lib/db';
 
 let db: Driver;
@@ -192,5 +192,20 @@ describe('system tables', () => {
     await db.query(`insert into unlock_attempts (key, success) values ('k', false)`);
     expect(await count(ids.admin, `select id from stripe_events`)).toBe(0);
     expect(await count(ids.coach, `select id from unlock_attempts`)).toBe(0);
+  });
+});
+
+describe('profiles', () => {
+  it('a person can update their own name and email preferences', async () => {
+    await asUser(stranger, (tx) => tx.query(`update profiles set full_name = 'Renamed Person', email_prefs = '{"donations":"digest"}' where id = $1`, [stranger]));
+    const [p] = await db.query<{ full_name: string; email_prefs: Record<string, string> }>(`select full_name, email_prefs from profiles where id = $1`, [stranger]);
+    expect(p).toEqual({ full_name: 'Renamed Person', email_prefs: { donations: 'digest' } });
+  });
+
+  it("can't make themselves an admin or change someone else's profile", async () => {
+    expect(await pgCode(asUser(stranger, (tx) => tx.query(`update profiles set is_admin = true where id = $1`, [stranger])))).toBe('42501');
+    await asUser(stranger, (tx) => tx.query(`update profiles set full_name = 'Hijacked' where id = $1`, [ids.coach]));
+    const [c] = await db.query<{ full_name: string }>(`select full_name from profiles where id = $1`, [ids.coach]);
+    expect(c.full_name).not.toBe('Hijacked');
   });
 });

@@ -22,7 +22,8 @@ async function createEmbeddedDriver(dataDir?: string): Promise<Driver> {
   const { PGlite } = await import('@electric-sql/pglite');
   let dir = dataDir;
   if (dir === undefined) {
-    dir = process.env.VERCEL ? '/tmp/gridiron-give-pglite' : path.join(process.cwd(), '.data', 'pglite');
+    // PGLITE_DIR lets the browser tests run against their own copy of the demo data.
+    dir = process.env.PGLITE_DIR || (process.env.VERCEL ? '/tmp/gridiron-give-pglite' : path.join(process.cwd(), '.data', 'pglite'));
   }
   if (dir !== 'memory://') mkdirSync(dir, { recursive: true });
   const pg = new PGlite(dir === 'memory://' ? undefined : dir);
@@ -46,8 +47,16 @@ async function createEmbeddedDriver(dataDir?: string): Promise<Driver> {
 // Supabase Postgres (or any Postgres) through DATABASE_URL --------------------
 async function createPostgresDriver(url: string): Promise<Driver> {
   const { default: postgres } = await import('postgres');
+  // json/jsonb parameters: callers pass JSON.stringify(...) text, as they do
+  // for PGlite. postgres.js would stringify it again and store a JSON string,
+  // so text goes through as is and only objects are serialized.
+  const asJson = (x: unknown) => (typeof x === 'string' ? x : JSON.stringify(x));
+  const jsonTypes = {
+    json: { to: 114, from: [114], serialize: asJson, parse: (x: string) => JSON.parse(x) },
+    jsonb: { to: 3802, from: [3802], serialize: asJson, parse: (x: string) => JSON.parse(x) },
+  };
   // prepare: false keeps this compatible with Supabase's transaction pooler.
-  const sql = postgres(url, { prepare: false, max: 5, idle_timeout: 20, connect_timeout: 10 });
+  const sql = postgres(url, { prepare: false, max: 5, idle_timeout: 20, connect_timeout: 10, types: jsonTypes as any });
   const wrap = (s: any): Queryable => ({
     async query(text, params) {
       const rows = await s.unsafe(text, (params ?? []) as any[]);
@@ -119,7 +128,7 @@ function driver(): Promise<Driver> {
 export function __setDriverForTests(d: Driver | undefined) {
   g.__ggDb!.driver = d ? Promise.resolve(d) : undefined;
 }
-export { createEmbeddedDriver as __createEmbeddedDriver };
+export { createEmbeddedDriver as __createEmbeddedDriver, createPostgresDriver as __createPostgresDriver };
 
 // Public API -----------------------------------------------------------------
 

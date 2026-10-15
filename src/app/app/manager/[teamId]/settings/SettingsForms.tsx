@@ -3,7 +3,6 @@ import { useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Camera, Trash2, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { Banner } from '@/components/ui/Banner';
 import { Field, Input, Select, Switch, Textarea, describedBy } from '@/components/ui/Field';
 import { Sheet } from '@/components/ui/Sheet';
 import { Spinner } from '@/components/ui/Spinner';

@@ -1,5 +1,5 @@
 import { vi } from 'vitest';
-import { __createEmbeddedDriver, __setDriverForTests, migrate, type Driver } from '@/lib/db';
+import { __createEmbeddedDriver, __createPostgresDriver, __setDriverForTests, migrate, type Driver } from '@/lib/db';
 import { seedDemo } from '@/lib/db/demo-seed';
 
 // next/headers is only available inside a request. Tests get an in-memory cookie jar.
@@ -16,9 +16,23 @@ vi.mock('next/headers', () => ({
 
 let driver: Driver | undefined;
 
-/** A fresh in-memory database with every migration and the demo data. */
+/**
+ * Set TEST_DATABASE_URL (a Postgres server you can create databases on) to
+ * run the suite against real Postgres instead of PGlite. Each test file gets
+ * its own new database, named gg_test_<random>.
+ */
+async function postgresDriver(url: string): Promise<Driver> {
+  const admin = await __createPostgresDriver(url);
+  const name = `gg_test_${Math.random().toString(36).slice(2, 10)}`;
+  await admin.query(`create database ${name}`);
+  const u = new URL(url);
+  u.pathname = `/${name}`;
+  return __createPostgresDriver(u.toString());
+}
+
+/** A fresh database with every migration and the demo data (in memory unless TEST_DATABASE_URL is set). */
 export async function freshDb({ seed = true } = {}): Promise<Driver> {
-  driver = await __createEmbeddedDriver('memory://');
+  driver = process.env.TEST_DATABASE_URL ? await postgresDriver(process.env.TEST_DATABASE_URL) : await __createEmbeddedDriver('memory://');
   await migrate(driver, { localAuth: true });
   if (seed) await seedDemo(driver);
   __setDriverForTests(driver);

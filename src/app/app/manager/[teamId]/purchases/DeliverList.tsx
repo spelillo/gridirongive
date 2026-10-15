@@ -144,7 +144,7 @@ function DeliverSheet({ teamId, needs, onClose, onDone }: { teamId: string; need
         </ul>
         {noConsent.length > 0 ? (
           <Banner tone="info" rounded>
-            A photo needs guardian consent. {noConsent.map((n) => n.who).join(', ')} {noConsent.length === 1 ? "doesn't" : "don't"} have it, so this delivery can't include a photo.
+            A photo needs guardian consent. {noConsent.map((n) => n.who).join(', ')} {noConsent.length === 1 ? "doesn't" : "don't"} have it, so this delivery can&apos;t include a photo.
           </Banner>
         ) : (
           <Field id="delivery-photo" label="Photo" optional helper='For example "Jayden in the new helmet". Donors get it with the update.'>
