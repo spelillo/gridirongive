@@ -13,9 +13,9 @@ const tones = {
 export function Banner({ tone = 'info', children, action, className, role, id, rounded }: { tone?: keyof typeof tones; children: ReactNode; action?: ReactNode; className?: string; role?: 'alert' | 'status'; id?: string; rounded?: boolean }) {
   const t = tones[tone];
   return (
-    <div id={id} role={role ?? (tone === 'error' ? 'alert' : 'status')} tabIndex={-1} className={cn('flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3 outline-none', rounded && 'rounded-md', t.cls, className)}>
+    <div id={id} role={role ?? (tone === 'error' ? 'alert' : 'status')} tabIndex={-1} className={cn('flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3 outline-none', rounded && 'rounded-[12px]', t.cls, className)}>
       <t.Icon aria-hidden size={20} strokeWidth={1.75} className={cn('shrink-0', t.icon)} />
-      <div className="min-w-0 flex-1 text-[15px] leading-[22px]">{children}</div>
+      <div className="min-w-0 flex-1 basis-48 text-[15px] leading-[22px]">{children}</div>
       {action && <div className="shrink-0">{action}</div>}
     </div>
   );

@@ -26,6 +26,14 @@ The public team is **Central High Varsity Football**, team code **KX7P2Q**. Card
 
 `npm run db:reset-demo` puts the demo data back to its starting state.
 
+### Hosted demo
+
+Every push to a branch other than `main` publishes the app with the sample data as a Vercel preview deployment (the "Demo site" GitHub Actions job), never to production. The build is made with `GG_FORCE_DEMO=1`, which makes it ignore every database, Supabase, Stripe and email setting, so it can't reach the live accounts. Use it to click through a design on a phone before it ships. The live site deploys from `main` only.
+
+### Demo art
+
+The players, team photos and gear icons are drawn, not photographed, because the sample players are minors. `node scripts/demo-art.mjs` regenerates the player and team images in `public/demo` (one full-length figure per player, in team colors, with the jersey number). Gear icons are SVG components in `src/components/gear/GearArt.tsx`.
+
 ## Going live
 
 Live mode needs a Supabase project, a Stripe account with Connect, and a Vercel project. [docs/SETUP.md](docs/SETUP.md) lists every environment variable, dashboard setting and the webhook URL, in order.
@@ -47,6 +55,7 @@ Live mode needs a Supabase project, a Stripe account with Connect, and a Vercel 
 | `npm run test:e2e` | Builds the app and runs the browser tests, with accessibility checks, at desktop and phone sizes |
 | `npm run db:migrate` | Applies `supabase/migrations` to the live database |
 | `npm run db:reset-demo` | Deletes the embedded demo database so it reseeds on next start |
+| `node scripts/demo-art.mjs` | Redraws the sample player and team images in `public/demo` |
 
 ## Documentation
 

@@ -11,7 +11,6 @@ const port = 3200;
 
 export default defineConfig({
   testDir: 'tests/e2e',
-  globalSetup: './tests/e2e/global-setup.ts',
   fullyParallel: false,
   workers: 1,
   retries: process.env.CI ? 1 : 0,
@@ -30,7 +29,9 @@ export default defineConfig({
   webServer: external
     ? undefined
     : {
-        command: `npm run build && npx next start -p ${port}`,
+        // The server wipes its own database before it starts. Wiping it from
+        // globalSetup instead deletes files under a server that already opened them.
+        command: `node -e "require('fs').rmSync('.data/e2e-pglite',{recursive:true,force:true})" && npm run build && npx next start -p ${port}`,
         url: `http://localhost:${port}/`,
         timeout: 600_000,
         reuseExistingServer: !process.env.CI,

@@ -45,6 +45,7 @@ export interface AthleteCtx {
     slug: string;
     status: string;
     sport: string;
+    color: string | null;
     requireProfileApproval: boolean;
     requireThankyouApproval: boolean;
     showAmountsToAthletes: boolean;
@@ -60,7 +61,7 @@ export const loadAthleteCtx = cache(async (athleteId: string): Promise<AthleteCt
   if (!/^[0-9a-f-]{36}$/.test(athleteId)) notFound();
   const row = await asUser(user.id, (tx) =>
     tx.one<any>(
-      `select a.*, athlete_role(a.id) as my_role, t.name as team_name, t.slug as team_slug, t.status as team_status, t.sport,
+      `select a.*, athlete_role(a.id) as my_role, t.name as team_name, t.slug as team_slug, t.status as team_status, t.sport, t.color as team_color,
          t.require_profile_approval, t.require_thankyou_approval, t.show_amounts_to_athletes, t.current_season_id,
          coalesce(s.label, '') as season_label,
          coalesce((select p.full_name from team_members m join profiles p on p.id = m.user_id
@@ -113,6 +114,7 @@ export const loadAthleteCtx = cache(async (athleteId: string): Promise<AthleteCt
       slug: row.team_slug,
       status: row.team_status,
       sport: row.sport,
+      color: row.team_color ?? null,
       requireProfileApproval: row.require_profile_approval,
       requireThankyouApproval: row.require_thankyou_approval,
       showAmountsToAthletes: row.show_amounts_to_athletes,

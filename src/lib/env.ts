@@ -13,7 +13,29 @@ import 'server-only';
  * Payments and email are chosen separately: Stripe when its keys are set,
  * Resend when its key is set. See docs/SETUP.md.
  */
-const e = process.env;
+/**
+ * GG_FORCE_DEMO=1 at build time makes a build demo-only: it ignores every
+ * database, Supabase, Stripe and email setting, whatever the server has.
+ * next.config.ts bakes the value into the build, so runtime settings can't
+ * undo it. The demo site job uses it for preview deployments of the main
+ * Vercel project, which carry the live settings.
+ */
+const forceDemo = process.env.GG_FORCE_DEMO === '1';
+const LIVE_KEYS = [
+  'DATABASE_URL',
+  'NEXT_PUBLIC_SUPABASE_URL',
+  'NEXT_PUBLIC_SUPABASE_ANON_KEY',
+  'SUPABASE_SERVICE_ROLE_KEY',
+  'STRIPE_SECRET_KEY',
+  'NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY',
+  'STRIPE_WEBHOOK_SECRET',
+  'STRIPE_CONNECT_WEBHOOK_SECRET',
+  'RESEND_API_KEY',
+  'ALLOW_SIMULATED_PAYMENTS',
+];
+const e: Record<string, string | undefined> = forceDemo
+  ? Object.fromEntries(Object.entries(process.env).filter(([k]) => !LIVE_KEYS.includes(k)))
+  : process.env;
 
 const DEV_SECRET = 'gridiron-give-development-secret-change-me';
 

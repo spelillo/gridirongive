@@ -72,3 +72,15 @@ test.describe('giving', () => {
     await expect(page).not.toHaveURL(/\/give\/success\//);
   });
 });
+
+test('public pages fit a 375px phone', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 800 });
+  for (const path of ['/', '/search?q=Central', `/t/${TEAM.slug}`, '/for-teams', '/sign-in', '/demo']) {
+    await page.goto(path);
+    await expectNoHorizontalScroll(page);
+  }
+  // The home hero clips its overflow, so check that its search controls are on screen.
+  await page.goto('/');
+  const button = await page.getByRole('main').getByRole('button', { name: 'Search', exact: true }).boundingBox();
+  expect(button!.x + button!.width).toBeLessThanOrEqual(375);
+});

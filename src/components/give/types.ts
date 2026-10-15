@@ -14,7 +14,7 @@ export interface GiveNeed {
 }
 
 export interface GiveConfig {
-  team: { id: string; name: string; slug: string; acceptsGifts: boolean; requireMessageApproval: boolean; stripeAccountId: string | null };
+  team: { id: string; name: string; slug: string; acceptsGifts: boolean; requireMessageApproval: boolean; stripeAccountId: string | null; color?: string | null };
   teamFundNeedId: string | null;
   needs: GiveNeed[];
   payments: { mode: 'stripe' | 'simulated'; publishableKey: string | null };

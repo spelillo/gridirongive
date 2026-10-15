@@ -39,6 +39,7 @@ export function SearchField({
   label = 'Search teams',
   keepParams,
   showButton,
+  variant = 'default',
 }: {
   size?: 'lg' | 'md';
   defaultValue?: string;
@@ -52,6 +53,8 @@ export function SearchField({
   keepParams?: Record<string, string>;
   /** Show a Search button without the sport select. */
   showButton?: boolean;
+  /** "nav" is the compact pill in the header. */
+  variant?: 'default' | 'nav';
 }) {
   const router = useRouter();
   const [q, setQ] = useState(defaultValue);
@@ -145,7 +148,10 @@ export function SearchField({
           }}
           className={cn(
             h,
-            'w-full rounded-md border border-hairline bg-canvas pl-10 pr-11 text-[16px] text-ink placeholder:text-ink-meta [&::-webkit-search-cancel-button]:hidden',
+            'w-full pl-10 pr-11 text-[16px] text-ink placeholder:text-ink-meta transition-[border-color,box-shadow,background-color] duration-150 focus:border-primary focus:shadow-[0_0_0_4px_rgba(23,71,209,0.22)] focus:outline-none [&::-webkit-search-cancel-button]:hidden',
+            variant === 'nav'
+              ? 'rounded-full border border-transparent bg-chrome hover:bg-band focus:bg-canvas'
+              : 'rounded-[12px] border border-hairline bg-canvas shadow-[0_1px_2px_rgba(16,24,40,0.05)]',
           )}
         />
         {q && (
@@ -188,7 +194,7 @@ export function SearchField({
         )}
       </div>
       {showButton && !withSport && (
-        <button type="submit" className={cn(h, 'shrink-0 rounded-md bg-primary px-5 font-medium text-on-primary hover:bg-primary-deep')}>
+        <button type="submit" className={cn(h, 'shrink-0 rounded-[12px] bg-primary px-6 font-semibold text-on-primary hover:bg-primary-deep')}>
           Search
         </button>
       )}
@@ -201,7 +207,7 @@ export function SearchField({
             id={`${inputId}-sport`}
             value={sport}
             onChange={(e) => setSport(e.target.value)}
-            className={cn(h, 'min-w-0 flex-1 rounded-md border border-hairline bg-canvas px-3 text-[16px] text-ink sm:flex-none')}
+            className={cn(h, 'min-w-0 flex-1 rounded-[12px] border border-hairline bg-canvas px-3 text-[16px] text-ink sm:flex-none')}
           >
             <option value="">All sports</option>
             {sports.map((s) => (
@@ -210,7 +216,7 @@ export function SearchField({
               </option>
             ))}
           </select>
-          <button type="submit" className={cn(h, 'shrink-0 rounded-md bg-primary px-5 font-medium text-on-primary hover:bg-primary-deep')}>
+          <button type="submit" className={cn(h, 'shrink-0 rounded-[12px] bg-primary px-6 font-semibold text-on-primary hover:bg-primary-deep')}>
             Search
           </button>
         </div>

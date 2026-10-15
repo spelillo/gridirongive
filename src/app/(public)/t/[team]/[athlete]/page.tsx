@@ -101,7 +101,7 @@ export default async function AthletePage({ params }: Props) {
           remainingCents: athlete.remaining_cents,
           itemsTotal: athlete.items_total,
           itemsFunded: athlete.items_funded,
-          team: { name: team.name, slug: team.slug },
+          team: { name: team.name, slug: team.slug, color: team.color, crest: team.mascot ? `${team.org_name} ${team.mascot}` : team.org_name },
           needs: needs.map((n, i) => ({
             id: n.id,
             number: i + 1,

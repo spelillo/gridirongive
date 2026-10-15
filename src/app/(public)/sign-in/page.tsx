@@ -5,6 +5,7 @@ import { getUser, safeNext } from '@/lib/auth/session';
 import { mode } from '@/lib/env';
 import { DEMO } from '@/lib/db/demo-seed';
 import { Banner } from '@/components/ui/Banner';
+import { LogoMark } from '@/components/ui/Logo';
 import { SignInForm } from './SignInForm';
 
 export const metadata: Metadata = { title: 'Sign in', robots: { index: false } };
@@ -16,8 +17,11 @@ export default async function SignInPage({ searchParams }: Props) {
   const next = safeNext(rawNext);
   if (await getUser()) redirect(next);
   return (
-    <div className="page-x mx-auto flex w-full max-w-[440px] flex-col gap-6 py-10 md:py-16">
+    <div className="bg-chrome">
+    <div className="page-x mx-auto flex w-full max-w-[480px] flex-col gap-6 py-10 md:py-16">
+      <div className="card flex flex-col gap-6 p-6 md:p-8">
       <div className="flex flex-col gap-2">
+        <LogoMark size={40} />
         <h1 className="t-section">Sign in</h1>
         <p className="t-body">We&apos;ll email you a link and a code. No password needed.</p>
       </div>
@@ -26,13 +30,14 @@ export default async function SignInPage({ searchParams }: Props) {
       <p className="t-caption">
         Coaches setting up a team for the first time start here too. New to Gridiron Give? <Link href="/for-teams">See how it works for teams</Link>.
       </p>
+      </div>
       {mode.demo && (
-        <section aria-labelledby="demo-h" className="flex flex-col gap-3 border-t border-hairline-soft pt-6">
+        <section aria-labelledby="demo-h" className="flex flex-col gap-3">
           <h2 id="demo-h" className="t-subhead">
             Demo accounts
           </h2>
           <p className="t-caption">Sign straight in as one of the sample people. Nothing here is real.</p>
-          <ul className="flex flex-col divide-y divide-hairline-soft rounded-md border border-hairline-soft">
+          <ul className="card flex flex-col divide-y divide-hairline-soft overflow-hidden">
             {DEMO.accounts.map((a) => (
               <li key={a.email}>
                 <form action="/api/auth/demo" method="post">
@@ -51,6 +56,7 @@ export default async function SignInPage({ searchParams }: Props) {
           </p>
         </section>
       )}
+    </div>
     </div>
   );
 }

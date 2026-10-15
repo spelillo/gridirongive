@@ -1,7 +1,9 @@
 'use client';
 import { useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { Camera, Trash2, UserPlus } from 'lucide-react';
+import { Camera, Check, Trash2, UserPlus } from 'lucide-react';
+import { cn } from '@/components/ui/cn';
+import { DEFAULT_TEAM_COLOR, TEAM_COLORS } from '@/config/team-colors';
 import { Button } from '@/components/ui/Button';
 import { Field, Input, Select, Switch, Textarea, describedBy } from '@/components/ui/Field';
 import { Sheet } from '@/components/ui/Sheet';
@@ -91,11 +93,25 @@ export function TeamPhoto({ teamId, hasPhoto, canEdit }: { teamId: string; hasPh
   );
 }
 
-export function ProfileForm({ teamId, name, about, seasonLabel, canEdit }: { teamId: string; name: string; about: string; seasonLabel: string; canEdit: boolean }) {
-  const [v, setV] = useState({ name, about, seasonLabel });
+export function ProfileForm({
+  teamId,
+  name,
+  about,
+  seasonLabel,
+  color,
+  canEdit,
+}: {
+  teamId: string;
+  name: string;
+  about: string;
+  seasonLabel: string;
+  color: string | null;
+  canEdit: boolean;
+}) {
+  const [v, setV] = useState({ name, about, seasonLabel, color });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const { pending, run } = useAction();
-  const dirty = v.name !== name || v.about !== about || v.seasonLabel !== seasonLabel;
+  const dirty = v.name !== name || v.about !== about || v.seasonLabel !== seasonLabel || v.color !== color;
   return (
     <form
       className="flex flex-col gap-4"
@@ -116,6 +132,38 @@ export function ProfileForm({ teamId, name, about, seasonLabel, canEdit }: { tea
       <Field id="about" label="About" optional helper={`${v.about.length} of 1,000 characters. Shown on the public team page.`} error={errors.about}>
         <Textarea id="about" value={v.about} maxLength={1000} rows={5} disabled={!canEdit} onChange={(e) => setV({ ...v, about: e.target.value })} aria-describedby={describedBy('about', errors.about, true)} />
       </Field>
+      <fieldset className="flex flex-col gap-2" aria-describedby="team-color-h">
+        <legend className="t-label mb-2 text-ink">Team color</legend>
+        <p id="team-color-h" className="t-caption -mt-1">
+          Used on your team page, player pages and the give form.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {[{ name: 'Default', hex: null }, ...TEAM_COLORS].map((c) => {
+            const on = (v.color ?? null) === c.hex;
+            return (
+              <label
+                key={c.name}
+                title={c.name}
+                className={cn(
+                  'relative flex size-11 cursor-pointer items-center justify-center rounded-full ring-offset-2 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-primary',
+                  on && 'ring-2 ring-ink',
+                  !canEdit && 'cursor-not-allowed opacity-60',
+                )}
+                style={{ background: c.hex ?? DEFAULT_TEAM_COLOR }}
+              >
+                <input type="radio" name="team-color" className="sr-only" checked={on} disabled={!canEdit} onChange={() => setV({ ...v, color: c.hex })} />
+                <span className="sr-only">{c.name}</span>
+                {on && <Check size={18} strokeWidth={3} className="text-white" aria-hidden />}
+              </label>
+            );
+          })}
+        </div>
+        {errors['team-color'] && (
+          <p className="t-caption text-error" role="alert">
+            {errors['team-color']}
+          </p>
+        )}
+      </fieldset>
       {canEdit && (
         <div>
           <Button type="submit" loading={pending} loadingLabel="Saving" disabled={!dirty}>

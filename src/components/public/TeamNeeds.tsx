@@ -1,6 +1,6 @@
 'use client';
 import { GiveButton, useGive } from '@/components/give/GiveProvider';
-import { GearIcon } from '@/components/give/GearIcon';
+import { GearArt } from '@/components/gear/GearArt';
 import { Meter } from '@/components/ui/Meter';
 import { NeedStatusChip } from '@/components/ui/Chip';
 import { moneyWhole } from '@/lib/domain/money';
@@ -12,44 +12,39 @@ export function TeamNeeds() {
   const teamNeeds = config.needs.filter((n) => n.kind === 'team');
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex flex-col gap-3 rounded-md border border-hairline-soft p-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="card flex flex-col gap-3 p-4">
         <div className="flex items-center gap-3">
-          <GearIcon category="team_fund" className="shrink-0 text-ink-list" />
-          <p className="text-[16px] text-ink-body">
-            <span className="font-medium text-ink">Team fund:</span> helps where it&apos;s needed most
-          </p>
+          <GearArt name="Team fund" category="team_fund" size={44} />
+          <div>
+            <p className="text-[16px] font-semibold text-ink">Team fund</p>
+            <p className="t-caption">Goes where it&apos;s needed most</p>
+          </div>
         </div>
-        <GiveButton target={{ kind: 'team_fund' }} variant="secondary" className="w-full sm:w-auto">
+        <GiveButton target={{ kind: 'team_fund' }} variant="secondary" full>
           Give to team fund
         </GiveButton>
       </div>
-      {teamNeeds.length > 0 && (
-        <ul className="flex flex-col gap-3">
-          {teamNeeds.map((n) => {
-            const left = needLeft(n);
-            return (
-              <li key={n.id} className="flex flex-col gap-3 rounded-md border border-hairline-soft p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-start gap-3">
-                    <GearIcon name={n.name} category={n.category} className="mt-0.5 shrink-0 text-ink-list" />
-                    <div>
-                      <h3 className="t-subhead">{n.name}</h3>
-                      {n.variant && <p className="t-caption">{n.variant}</p>}
-                    </div>
-                  </div>
-                  {left === 0 ? <NeedStatusChip status={n.status} /> : <span className="t-caption tabular whitespace-nowrap">{moneyWhole(left)} left</span>}
-                </div>
-                <Meter raised={n.raisedCents} goal={n.priceCents ?? 0} compact />
-                {left > 0 && (
-                  <GiveButton target={{ kind: 'need', needId: n.id, entry: 'card' }} variant="secondary" className="self-start">
-                    Give
-                  </GiveButton>
-                )}
-              </li>
-            );
-          })}
-        </ul>
-      )}
+      {teamNeeds.map((n) => {
+        const left = needLeft(n);
+        return (
+          <div key={n.id} className="card flex flex-col gap-3 p-4">
+            <div className="flex items-start gap-3">
+              <GearArt name={n.name} category={n.category} size={44} />
+              <div className="min-w-0 flex-1">
+                <h3 className="text-[16px] leading-6 font-semibold text-ink">{n.name}</h3>
+                {n.variant && <p className="t-caption">{n.variant}</p>}
+              </div>
+              {left === 0 ? <NeedStatusChip status={n.status} /> : <span className="t-caption tabular whitespace-nowrap">{moneyWhole(left)} left</span>}
+            </div>
+            <Meter raised={n.raisedCents} goal={n.priceCents ?? 0} compact />
+            {left > 0 && (
+              <GiveButton target={{ kind: 'need', needId: n.id, entry: 'card' }} variant="secondary" full>
+                Give to {n.name}
+              </GiveButton>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }

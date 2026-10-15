@@ -1,8 +1,8 @@
 import { cn } from './cn';
 import { moneyWhole, moneyWholeUp, percentFunded } from '@/lib/domain/money';
 
-/** 8px bar, always with text: "$140 of $300" and "47%" (ui-ux-spec 3). */
-export function Meter({ raised, goal, label, compact, className, showText = true }: { raised: number; goal: number; label?: string; compact?: boolean; className?: string; showText?: boolean }) {
+/** Rounded bar in the team's color (blue by default), always with text: "$140 of $300" and "47%" (ui-ux-spec 3). */
+export function Meter({ raised, goal, label, compact, thick, className, showText = true }: { raised: number; goal: number; label?: string; compact?: boolean; thick?: boolean; className?: string; showText?: boolean }) {
   const pct = percentFunded(raised, goal);
   const done = goal > 0 && raised >= goal;
   return (
@@ -21,9 +21,9 @@ export function Meter({ raised, goal, label, compact, className, showText = true
         aria-valuemax={100}
         aria-valuenow={pct}
         aria-label={label ?? `${moneyWhole(raised)} of ${moneyWholeUp(goal)} raised`}
-        className="h-2 w-full overflow-hidden rounded-[4px] bg-meter-track"
+        className={cn('w-full overflow-hidden rounded-full bg-meter-track', thick ? 'h-2.5' : 'h-2')}
       >
-        <div className={cn('h-full rounded-[4px] transition-[width] duration-300 ease-out', done ? 'bg-funded' : 'bg-primary')} style={{ width: `${pct}%` }} />
+        <div className={cn('h-full rounded-full transition-[width] duration-500 ease-out', done ? 'bg-funded' : 'bg-[var(--team,var(--color-primary))]')} style={{ width: `${pct}%` }} />
       </div>
     </div>
   );

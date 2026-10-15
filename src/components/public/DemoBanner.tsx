@@ -6,7 +6,7 @@ export function DemoBanner() {
   if (!mode.demo && mode.payments === 'stripe') return null;
   const text = mode.demo ? 'Demo mode: sample data, no real payments, emails go to the on-site outbox.' : 'Test mode: payments are simulated.';
   return (
-    <div className="no-print bg-navy px-4 py-1.5 text-center text-[13px] leading-5 text-white">
+    <div className="no-print bg-[linear-gradient(90deg,#0a1633,#1a2f6b)] px-4 py-1.5 text-center text-[13px] leading-5 text-[#dbe3f5]">
       {text}{' '}
       {mode.demo && (
         <Link href="/demo" className="font-medium text-white underline hover:text-white">

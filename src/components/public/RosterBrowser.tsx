@@ -35,7 +35,7 @@ export function RosterBrowser({ tiles, teamSlug, sport }: { tiles: RosterTile[];
     });
   }, [tiles, q, group, needs, sort]);
 
-  const ctl = 'h-11 rounded-md border border-hairline bg-canvas px-3 text-[16px] text-ink';
+  const ctl = 'h-11 rounded-[10px] border border-hairline bg-canvas px-3 text-[16px] text-ink focus:border-primary focus:shadow-[0_0_0_4px_rgba(23,71,209,0.22)] focus:outline-none';
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
@@ -79,7 +79,7 @@ export function RosterBrowser({ tiles, teamSlug, sport }: { tiles: RosterTile[];
       {shown.length === 0 ? (
         <EmptyState
           action={
-            <button type="button" className="min-h-11 rounded-md border border-hairline px-4 font-medium text-primary-deep" onClick={() => { setQ(''); setGroup('all'); setNeeds(false); }}>
+            <button type="button" className="min-h-11 rounded-[10px] border border-[#cfd6e1] bg-canvas px-4 font-semibold text-ink hover:bg-chrome" onClick={() => { setQ(''); setGroup('all'); setNeeds(false); }}>
               Show all players
             </button>
           }
@@ -87,7 +87,7 @@ export function RosterBrowser({ tiles, teamSlug, sport }: { tiles: RosterTile[];
           {tiles.length === 0 ? 'No player pages are live yet.' : 'No players match these filters.'}
         </EmptyState>
       ) : (
-        <ul className="grid grid-cols-2 gap-x-4 gap-y-6 md:grid-cols-3 lg:grid-cols-4">
+        <ul className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3">
           {shown.map((t) => (
             <AthleteTile key={t.id} a={t} teamSlug={teamSlug} />
           ))}

@@ -5,7 +5,7 @@ import { cn } from './cn';
 export function Avatar({ name, src, size = 40, className }: { name: string; src?: string | null; size?: number; className?: string }) {
   return (
     <span
-      className={cn('inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-band font-medium text-ink', className)}
+      className={cn('inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full font-semibold', className ?? 'bg-band text-ink')}
       style={{ width: size, height: size, fontSize: Math.round(size * 0.38) }}
       aria-hidden
     >

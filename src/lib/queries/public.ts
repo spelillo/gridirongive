@@ -16,6 +16,8 @@ export interface PublicTeam {
   sport: string;
   level: string;
   mascot: string | null;
+  /** Accent color as #rrggbb, or null for the site default. */
+  color: string | null;
   city: string;
   state: string;
   zip: string | null;
@@ -41,7 +43,7 @@ export interface PublicTeam {
 }
 
 const TEAM_COLUMNS = `
-  t.id, t.slug, t.name, t.sport, t.level, t.mascot, t.city, t.state, t.zip, t.about,
+  t.id, t.slug, t.name, t.sport, t.level, t.mascot, t.color, t.city, t.state, t.zip, t.about,
   t.photo_path is not null as has_photo, md5(coalesce(t.photo_path, '')) as photo_v,
   t.status, t.verification_status, t.verification_method, t.payouts_status, t.code_version,
   o.name as org_name, s.label as season_label, s.id as season_id,
@@ -351,4 +353,48 @@ export async function teamsNear(zip: string | undefined, state: string | undefin
 export async function zipToState(zip: string): Promise<string | null> {
   const row = await sys.one<{ state: string }>(`select state from teams where left(zip, 3) = left($1, 3) limit 1`, [zip]);
   return row?.state ?? null;
+}
+
+/** Most recently active live teams, for the home page when no location is known. */
+export async function activeTeams(limit = 6): Promise<PublicTeam[]> {
+  return sys.query<PublicTeam>(`select ${TEAM_COLUMNS} ${TEAM_FROM} where t.status = 'live' order by t.last_activity_at desc limit $1`, [limit]);
+}
+
+export interface RecentGift {
+  id: string;
+  item: string;
+  amount_cents: number;
+  funded: boolean;
+  team_name: string;
+  team_slug: string;
+  team_color: string | null;
+  sport: string;
+  created_at: Date;
+}
+
+/**
+ * Latest gifts across live teams for the home page. Names the item and the
+ * team only: never the player or the donor.
+ */
+export async function recentGifts(limit = 6): Promise<RecentGift[]> {
+  return sys.query<RecentGift>(
+    `select a.id, n.name as item, a.amount_cents, n.status in ('funded', 'purchased', 'delivered') as funded,
+            t.name as team_name, t.slug as team_slug, t.color as team_color, t.sport, a.created_at
+     from allocations a
+     join needs n on n.id = a.need_id
+     join teams t on t.id = n.team_id
+     where t.status = 'live' and a.amount_cents > 0 and a.reversed_at is null and n.kind <> 'team_fund'
+     order by a.created_at desc
+     limit $1`,
+    [limit],
+  );
+}
+
+/** Totals across every live team, for the home page. */
+export async function platformTotals(): Promise<{ raised_cents: number; items_funded: number; teams: number }> {
+  const r = await sys.one<{ raised_cents: number; items_funded: number; teams: number }>(
+    `select coalesce(sum(tt.raised_cents), 0)::int as raised_cents, coalesce(sum(tt.items_funded), 0)::int as items_funded, count(*)::int as teams
+     from teams t left join team_totals tt on tt.team_id = t.id where t.status = 'live'`,
+  );
+  return r ?? { raised_cents: 0, items_funded: 0, teams: 0 };
 }
