@@ -10,8 +10,8 @@ name: Demo site
 # real accounts, even though the Vercel project has them.
 #
 # Runs on every push to a branch other than main, and from the Actions tab.
-# The address is in the job summary, and at gridirongive-demo.vercel.app
-# when the token is allowed to set that alias.
+# The address is in the job summary. Preview deployments sit behind Vercel's
+# login (Deployment Protection), so open it while signed in to Vercel.
 #
 # Repository secret: VERCEL_TOKEN (the same one the Go live job uses).
 
@@ -30,7 +30,6 @@ jobs:
     timeout-minutes: 20
     env:
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-      DEMO_ALIAS: gridirongive-demo.vercel.app
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -46,8 +45,3 @@ jobs:
           echo "url=$url" >> "$GITHUB_OUTPUT"
       - name: Check the demo site
         run: node scripts/demo-preview.mjs check "${{ steps.deploy.outputs.url }}"
-      - name: Point the demo address at it
-        continue-on-error: true
-        run: |
-          npx --yes vercel@62.0.0 alias set "${{ steps.deploy.outputs.url }}" "$DEMO_ALIAS" --token "$VERCEL_TOKEN" --scope synth10
-          echo "Also at https://$DEMO_ALIAS" >> "$GITHUB_STEP_SUMMARY"
