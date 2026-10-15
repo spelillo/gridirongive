@@ -93,7 +93,7 @@ function checkBehindLogin(base) {
     let body = '';
     let note = '';
     try {
-      body = execFileSync('npx', ['--yes', 'vercel@62.0.0', 'curl', path, '--deployment', base, '--yes', '--token', token], {
+      body = execFileSync('npx', ['--yes', 'vercel@62.0.0', '--token', token, 'curl', path, '--deployment', base, '--yes'], {
         encoding: 'utf8',
         stdio: ['ignore', 'pipe', 'pipe'],
         maxBuffer: 20 * 1024 * 1024,
