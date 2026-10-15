@@ -44,6 +44,7 @@ export async function giveConfig(team: PublicTeam, athleteIds: string[]): Promis
       id: team.id,
       name: team.name,
       slug: team.slug,
+      color: team.color ?? null,
       acceptsGifts: acceptsGifts(team) && paymentsAvailable(),
       requireMessageApproval: t?.require_message_approval ?? true,
       stripeAccountId: mode.payments === 'stripe' ? t?.stripe_account_id ?? null : null,

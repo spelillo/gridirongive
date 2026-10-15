@@ -1,0 +1,43 @@
+name: Demo site
+
+# Publishes the app with sample teams, players and gifts to its own Vercel
+# project (gridirongive-demo), so a design can be clicked through on a phone
+# before it reaches the live site. The demo project has no database or
+# payment settings: the app runs on its embedded demo database and cannot
+# reach the real Supabase or Stripe accounts. scripts/demo-preview.mjs
+# refuses to deploy if any live setting is ever added to that project.
+#
+# Runs on every push to a branch other than main, and from the Actions tab.
+# The demo address shows the latest such push.
+#
+# Repository secret: VERCEL_TOKEN (the same one the Go live job uses).
+
+on:
+  push:
+    branches-ignore: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: demo-preview
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Find or create the demo project
+        run: node scripts/demo-preview.mjs prepare
+      - name: Deploy
+        id: deploy
+        run: |
+          url=$(npx --yes vercel@62.0.0 deploy --prod --yes --token "$VERCEL_TOKEN")
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+      - name: Check the demo site
+        run: node scripts/demo-preview.mjs check "${{ steps.deploy.outputs.url }}"

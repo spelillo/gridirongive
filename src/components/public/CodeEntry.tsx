@@ -103,7 +103,7 @@ export function CodeEntryForm({ teamId, onDone, compact }: { teamId?: string; on
             }
           }}
           className={cn(
-            'h-11 min-w-0 flex-1 rounded-md border border-hairline bg-canvas px-3 font-mono text-[18px] tracking-[0.2em] text-ink uppercase tabular placeholder:tracking-[0.2em] placeholder:text-ink-meta/60 disabled:bg-chrome aria-[invalid=true]:border-error',
+            'h-12 min-w-0 flex-1 rounded-[12px] border border-hairline bg-canvas px-4 font-mono text-[19px] font-semibold tracking-[0.24em] focus:border-primary focus:shadow-[0_0_0_4px_rgba(23,71,209,0.22)] focus:outline-none text-ink uppercase tabular placeholder:tracking-[0.2em] placeholder:text-ink-meta/60 disabled:bg-chrome aria-[invalid=true]:border-error',
             shake > 0 && state.kind === 'error' && 'gg-shake',
           )}
         />
@@ -121,7 +121,7 @@ export function CodeEntryForm({ teamId, onDone, compact }: { teamId?: string; on
 /** Locked roster panel on the team page (ui-ux-spec 5.3). */
 export function LockedRosterPanel({ teamId }: { teamId: string }) {
   return (
-    <div className="flex flex-col gap-4 rounded-lg bg-chrome p-5 md:p-8">
+    <div className="card flex flex-col gap-4 p-5 md:p-8">
       <div className="flex items-center gap-3">
         <Lock aria-hidden size={22} strokeWidth={1.75} className="text-ink-nav" />
         <h2 className="t-subhead">Enter the team code to see players</h2>

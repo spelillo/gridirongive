@@ -7,7 +7,7 @@ const tones: Record<ChipTone, string> = {
   funded: 'bg-funded-bg text-funded',
   warn: 'bg-warn-bg text-warn',
   error: 'bg-error-bg text-error',
-  neutral: 'bg-band text-ink',
+  neutral: 'bg-band text-ink-list',
   muted: 'bg-chrome text-ink-meta',
   info: 'bg-band-blue text-primary-deep',
 };
@@ -17,7 +17,7 @@ const icons = { check: Check, clock: Clock, hidden: EyeOff, draft: FileEdit, loc
 export function Chip({ tone = 'neutral', icon, children, className }: { tone?: ChipTone; icon?: keyof typeof icons; children: React.ReactNode; className?: string }) {
   const Icon = icon ? icons[icon] : null;
   return (
-    <span className={cn('inline-flex h-6 shrink-0 items-center gap-1 rounded-md px-2 text-[13px] leading-5 font-medium whitespace-nowrap', tones[tone], className)}>
+    <span className={cn('inline-flex h-6 shrink-0 items-center gap-1 rounded-full px-2.5 text-[12.5px] leading-5 font-semibold whitespace-nowrap', tones[tone], className)}>
       {Icon && <Icon aria-hidden size={14} strokeWidth={2} />}
       {children}
     </span>

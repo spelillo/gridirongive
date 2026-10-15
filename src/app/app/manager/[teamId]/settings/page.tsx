@@ -38,7 +38,7 @@ export default async function SettingsPage({ params }: { params: Promise<{ teamI
 
       <Section title="Team profile" id="profile">
         <TeamPhoto teamId={teamId} hasPhoto={Boolean(t.photoPath)} canEdit={editable} />
-        <ProfileForm teamId={teamId} name={t.name} about={t.about} seasonLabel={t.seasonLabel} canEdit={editable} />
+        <ProfileForm teamId={teamId} name={t.name} about={t.about} seasonLabel={t.seasonLabel} color={t.color} canEdit={editable} />
       </Section>
 
       <Section title="Privacy" id="privacy">

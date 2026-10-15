@@ -2,7 +2,7 @@ import type { ComponentProps, ReactNode } from 'react';
 import { cn } from './cn';
 
 export const inputClass =
-  'block w-full min-h-11 rounded-md border border-hairline bg-canvas px-3 py-2 text-[16px] leading-6 text-ink placeholder:text-ink-meta/80 disabled:bg-chrome disabled:text-ink-meta aria-[invalid=true]:border-error [&:read-only:not(select)]:bg-chrome';
+  'block w-full min-h-11 rounded-[10px] border border-hairline bg-canvas px-3.5 py-2 text-[16px] leading-6 text-ink shadow-[0_1px_2px_rgba(16,24,40,0.04)] transition-[border-color,box-shadow] duration-150 placeholder:text-ink-meta/80 hover:border-ink-meta focus:border-primary focus:shadow-[0_0_0_4px_rgba(23,71,209,0.22)] focus:outline-none focus-visible:outline-none disabled:bg-chrome disabled:text-ink-meta aria-[invalid=true]:border-error [&:read-only:not(select)]:bg-chrome';
 
 interface FieldProps {
   id: string;
@@ -91,8 +91,8 @@ export function Switch({ label, hint, id, className, ...rest }: ComponentProps<'
       </span>
       <span className="relative inline-flex shrink-0">
         <input id={id} type="checkbox" role="switch" {...rest} className="peer sr-only" />
-        <span className="h-7 w-12 rounded-md border border-hairline bg-band transition-colors peer-checked:border-primary peer-checked:bg-primary peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-primary" />
-        <span className="pointer-events-none absolute left-1 top-1 size-5 rounded-[4px] bg-canvas shadow-[0_1px_2px_rgba(0,0,0,.3)] transition-transform peer-checked:translate-x-5" />
+        <span className="h-7 w-12 rounded-full border border-hairline bg-band transition-colors peer-checked:border-primary peer-checked:bg-primary peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-primary" />
+        <span className="pointer-events-none absolute left-1 top-1 size-5 rounded-full bg-canvas shadow-[0_1px_2px_rgba(0,0,0,.3)] transition-transform peer-checked:translate-x-5" />
       </span>
     </label>
   );

@@ -1,9 +1,12 @@
 import Link from 'next/link';
-import { ExternalLink } from 'lucide-react';
+import { ClipboardCheck, ExternalLink, Heart, Landmark, Mail, MessageSquare, Shirt, ShoppingCart, UserCheck, Wallet, type LucideIcon } from 'lucide-react';
 import { loadTeamCtx, teamCounts } from '@/lib/app/team';
 import { asUser, sys } from '@/lib/db';
 import { env } from '@/lib/env';
-import { PageHeader, Section } from '@/components/ui/PageHeader';
+import { Section } from '@/components/ui/PageHeader';
+import { Avatar } from '@/components/ui/Avatar';
+import { TeamCrest } from '@/components/public/TeamCrest';
+import { teamVars } from '@/config/team-colors';
 import { Banner } from '@/components/ui/Banner';
 import { ButtonLink } from '@/components/ui/Button';
 import { CopyButton } from '@/components/ui/CopyButton';
@@ -33,7 +36,7 @@ export default async function Overview({ params }: { params: Promise<{ teamId: s
       [teamId, team.seasonId],
     ),
     sys.query<any>(
-      `select a.id, a.first_name, a.last_name, a.preferred_name, a.show_full_last_name, a.jersey, at.goal_cents, at.raised_cents, at.items_total, at.items_funded
+      `select a.id, a.first_name, a.last_name, a.preferred_name, a.show_full_last_name, a.jersey, a.position, a.photo_path, at.goal_cents, at.raised_cents, at.items_total, at.items_funded
        from athletes a join athlete_totals at on at.athlete_id = a.id
        where a.team_id = $1 and a.status = 'live' and a.archived_at is null and at.goal_cents > 0
        order by (at.raised_cents::float / at.goal_cents), a.first_name limit 10`,
@@ -78,160 +81,208 @@ export default async function Overview({ params }: { params: Promise<{ teamId: s
   const raised = totals?.raised_cents ?? 0;
   const fund = totals?.team_fund_cents ?? 0;
   const itemsRaised = raised - fund;
-  const figures = [
-    { label: 'Raised', value: moneyWhole(raised) },
-    { label: 'Goal', value: moneyWhole(goal) },
-    { label: 'Funded', value: `${percentFunded(itemsRaised, goal)}%` },
-    { label: 'Available to spend', value: moneyWhole(money_.available + fund) },
-    { label: 'Spent', value: moneyWhole(money_.spent) },
-    { label: 'Paid out', value: moneyWhole(money_.paid_out) },
-  ];
+  const pct = percentFunded(itemsRaised, goal);
   const teamLink = code?.token ? `${env.appUrl}/s/${code.token}` : `${env.appUrl}/t/${team.slug}`;
+  const crest = team.orgName;
+  const todoIcon: Record<string, LucideIcon> = { p: UserCheck, g: Shirt, b: ShoppingCart, t: Heart, m: MessageSquare, i: Mail, s: Landmark };
 
   return (
-    <div className="flex flex-col gap-10">
-      <PageHeader
-        title={team.name}
-        sub={[team.seasonLabel, `${team.city}, ${team.state}`].filter(Boolean).join(' · ')}
-        actions={
-          team.status !== 'draft' ? (
-            <ButtonLink href={`/t/${team.slug}`} variant="secondary" target="_blank">
+    <div className="flex flex-col gap-6 md:gap-8" style={teamVars(team.color) as React.CSSProperties}>
+      <header className="relative isolate overflow-hidden rounded-[20px] bg-[var(--team-night)] px-5 py-6 text-white md:px-8 md:py-8">
+        <div aria-hidden className="absolute inset-0 -z-10 bg-[radial-gradient(90%_140%_at_100%_0%,var(--team)_0%,transparent_65%)]" />
+        <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-center gap-4">
+            <TeamCrest name={crest} color={team.color} size={56} />
+            <div className="min-w-0">
+              <h1 className="text-[26px] leading-8 font-bold tracking-[-0.02em] text-white md:text-[32px] md:leading-10">{team.name}</h1>
+              <p className="text-[15px] text-white/80">{[team.seasonLabel, `${team.city}, ${team.state}`].filter(Boolean).join(' · ')}</p>
+            </div>
+          </div>
+          {team.status !== 'draft' && (
+            <ButtonLink href={`/t/${team.slug}`} variant="inverse" target="_blank" className="self-start md:self-center">
               Team page <ExternalLink size={16} aria-hidden />
             </ButtonLink>
-          ) : undefined
-        }
-      />
+          )}
+        </div>
+      </header>
 
       {team.status === 'draft' && (
-        <Banner tone="info" action={ctx.isCoach ? <ButtonLink href={`/app/manager/new?team=${teamId}`} size="sm">Continue setup</ButtonLink> : undefined}>
+        <Banner rounded tone="info" action={ctx.isCoach ? <ButtonLink href={`/app/manager/new?team=${teamId}`} size="sm">Continue setup</ButtonLink> : undefined}>
           This team isn&apos;t public yet. Finish setup to publish it.
         </Banner>
       )}
-      {team.status === 'season_closed' && <Banner tone="info">The {team.seasonLabel || 'current'} season is closed. Start the next season in Settings.</Banner>}
-      {team.status === 'suspended' && <Banner tone="error">This team is suspended and hidden from donors. Contact support to resolve it.</Banner>}
+      {team.status === 'season_closed' && <Banner rounded tone="info">The {team.seasonLabel || 'current'} season is closed. Start the next season in Settings.</Banner>}
+      {team.status === 'suspended' && <Banner rounded tone="error">This team is suspended and hidden from donors. Contact support to resolve it.</Banner>}
 
-      {actions.length > 0 && (
-        <Section title="To do" id="todo">
-          <ul className="divide-y divide-hairline-soft rounded-md border border-hairline-soft">
-            {actions.map((a) => (
-              <li key={a.key} className="flex min-h-14 flex-wrap items-center justify-between gap-3 px-4 py-3">
-                <span className="text-[15px] text-ink">{a.text}</span>
-                {a.button ?? (
-                  <ButtonLink href={a.href} size="sm" variant="secondary">
-                    {a.label}
-                  </ButtonLink>
-                )}
-              </li>
-            ))}
-          </ul>
-        </Section>
-      )}
-
-      <section aria-labelledby="totals-h" className="flex flex-col gap-4">
-        <h2 id="totals-h" className="t-subhead">
+      <section aria-labelledby="totals-h">
+        <h2 id="totals-h" className="sr-only">
           Team totals
         </h2>
-        <dl className="grid grid-cols-3 gap-x-4 gap-y-5 border-y border-hairline-soft py-5 lg:grid-cols-6">
-          {figures.map((f) => (
-            <div key={f.label} className="flex flex-col gap-1">
-              <dt className="t-caption">{f.label}</dt>
-              <dd className="t-figure tabular">{f.value}</dd>
-            </div>
-          ))}
+        <dl className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="card flex flex-col gap-2 p-5 sm:col-span-2">
+            <dt className="t-label text-ink-meta">Raised</dt>
+            <dd className="flex flex-col gap-3">
+              <span className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                <span className="flex items-baseline gap-3">
+                  <span className="t-score text-[44px] text-ink">{moneyWhole(raised)}</span>
+                  <span className="rounded-full bg-[var(--team-soft)] px-2.5 py-0.5 text-[13px] font-semibold text-[var(--team)]">{pct}% funded</span>
+                </span>
+                <span className="t-caption tabular">Goal {moneyWhole(goal)}</span>
+              </span>
+              <Meter raised={itemsRaised} goal={goal || 1} showText={false} thick label={`Team gear ${pct}% funded`} />
+              {fund > 0 && (
+                <span className="t-caption">
+                  Includes {money(fund)} in the team fund. <Link href={`${base}/purchases`}>Spend it on the buy list</Link>.
+                </span>
+              )}
+            </dd>
+          </div>
+          <div className="card flex flex-col gap-2 p-5">
+            <dt className="t-label flex items-center gap-2 text-ink-meta">
+              <Wallet size={16} aria-hidden /> Available to spend
+            </dt>
+            <dd className="t-score text-[36px] text-ink">{moneyWhole(money_.available + fund)}</dd>
+            <dd>
+              <Link href={`${base}/purchases`} className="text-[14px] font-semibold no-underline hover:underline">
+                Open buy list
+              </Link>
+            </dd>
+          </div>
+          <div className="card flex flex-col gap-2 p-5">
+            <dt className="t-label flex items-center gap-2 text-ink-meta">
+              <ShoppingCart size={16} aria-hidden /> Spent
+            </dt>
+            <dd className="t-score text-[36px] text-ink">{moneyWhole(money_.spent)}</dd>
+            <dd className="t-caption">Paid out {moneyWhole(money_.paid_out)}</dd>
+          </div>
         </dl>
-        <Meter raised={itemsRaised} goal={goal || 1} showText={false} label={`Team gear ${percentFunded(itemsRaised, goal)}% funded`} />
-        {fund > 0 && (
-          <p className="t-caption">
-            Raised includes {money(fund)} in the team fund. <Link href={`${base}/purchases`}>Spend it on the buy list</Link>.
-          </p>
-        )}
       </section>
 
-      <div className="grid gap-10 xl:grid-cols-2">
-        <Section title="Athletes by need" id="need" actions={<Link href={`${base}/roster`} className="text-[15px]">View roster</Link>}>
-          {lowest.length === 0 ? (
-            <EmptyState action={<ButtonLink href={`${base}/roster`} variant="secondary">Open roster</ButtonLink>}>No live athletes yet.</EmptyState>
-          ) : (
-            <table className="w-full text-left text-[15px]">
-              <thead className="t-caption">
-                <tr className="border-b border-hairline-soft">
-                  <th scope="col" className="py-2 pr-3 font-medium">Athlete</th>
-                  <th scope="col" className="w-[40%] py-2 pr-3 font-medium">Funded</th>
-                  <th scope="col" className="py-2 text-right font-medium">Open items</th>
-                </tr>
-              </thead>
-              <tbody>
-                {lowest.map((a) => (
-                  <tr key={a.id} className="border-b border-hairline-soft">
-                    <td className="py-3 pr-3">
-                      <Link href={`${base}/roster/${a.id}`} className="font-medium">
-                        {athleteDisplayName(a)}
-                      </Link>
-                      {a.jersey && <span className="t-caption"> #{a.jersey}</span>}
-                    </td>
-                    <td className="py-3 pr-3">
-                      <div className="flex items-center gap-2">
-                        <Meter raised={a.raised_cents} goal={a.goal_cents} showText={false} className="flex-1" label={`${athleteDisplayName(a)} ${percentFunded(a.raised_cents, a.goal_cents)}% funded`} />
-                        <span className="t-caption tabular w-10 text-right">{percentFunded(a.raised_cents, a.goal_cents)}%</span>
-                      </div>
-                    </td>
-                    <td className="py-3 text-right tabular">{a.items_total - a.items_funded}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </Section>
-
-        <Section title="Recent donations" id="recent" actions={<Link href={`${base}/donations`} className="text-[15px]">View all</Link>}>
-          {recent.length === 0 ? (
-            <EmptyState>No donations yet. Share the team link to get started.</EmptyState>
-          ) : (
-            <ul className="divide-y divide-hairline-soft border-y border-hairline-soft">
-              {recent.map((d) => (
-                <li key={d.id}>
-                  <Link href={`${base}/donations/${d.id}`} className="flex min-h-14 items-center gap-3 py-3 text-ink no-underline hover:bg-band">
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[15px] font-medium">{d.show_name ? d.donor_name : 'Anonymous'}</span>
-                      <span className="t-caption block truncate">
-                        {[d.first_name ? athleteDisplayName(d) : 'Team fund', d.items && d.items !== 'Team fund' ? d.items : null, relativeTime(d.succeeded_at)]
-                          .filter(Boolean)
-                          .join(' · ')}
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
+        <div className="flex min-w-0 flex-col gap-6">
+          {actions.length > 0 && (
+            <Section title="To do" id="todo">
+              <ul className="card divide-y divide-hairline-soft overflow-hidden">
+                {actions.map((a) => {
+                  const Icon = todoIcon[a.key] ?? ClipboardCheck;
+                  return (
+                    <li key={a.key} className="flex min-h-16 flex-wrap items-center justify-between gap-3 px-4 py-3">
+                      <span className="flex items-center gap-3 text-[15px] font-medium text-ink">
+                        <span className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-[var(--team-soft)] text-[var(--team)]">
+                          <Icon size={18} aria-hidden />
+                        </span>
+                        {a.text}
                       </span>
-                    </span>
-                    <span className="tabular text-[15px] font-medium">{money(d.gift_cents)}</span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
+                      {a.button ?? (
+                        <ButtonLink href={a.href} size="sm" variant="secondary">
+                          {a.label}
+                        </ButtonLink>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            </Section>
           )}
-        </Section>
-      </div>
 
-      {code && (
-        <Section title="Team code" id="code" actions={<Link href={`${base}/share`} className="text-[15px]">Share kit</Link>}>
-          <div className="flex flex-col gap-4 rounded-md border border-hairline-soft p-5 md:flex-row md:items-center md:justify-between">
-            <div className="flex flex-col gap-1">
-              <p className="t-caption">Families and supporters use this code to see the roster.</p>
-              <p className="font-mono text-[32px] leading-10 font-medium tracking-[0.2em] text-ink tabular" aria-label={`Team code ${code.code.split('').join(' ')}`}>
-                {code.code}
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <CopyButton value={code.code} label="Copy code" surface="manager_overview" />
-              <CopyButton value={teamLink} label="Copy team link" surface="manager_overview" />
-              <ButtonLink href={`${base}/share#qr`} variant="secondary">
-                QR code
-              </ButtonLink>
-              {ctx.canEdit && (
-                <ButtonLink href={`${base}/share#change-code`} variant="tertiary">
-                  Change code
-                </ButtonLink>
-              )}
-            </div>
-          </div>
-        </Section>
-      )}
+          <Section title="Athletes by need" id="need" actions={<Link href={`${base}/roster`} className="text-[15px] font-semibold">View roster</Link>}>
+            {lowest.length === 0 ? (
+              <EmptyState action={<ButtonLink href={`${base}/roster`} variant="secondary">Open roster</ButtonLink>}>No live athletes yet.</EmptyState>
+            ) : (
+              <ul className="card divide-y divide-hairline-soft overflow-hidden">
+                {lowest.map((a) => {
+                  const p = percentFunded(a.raised_cents, a.goal_cents);
+                  return (
+                    <li key={a.id}>
+                      <Link href={`${base}/roster/${a.id}`} className="flex items-center gap-3 px-4 py-3 text-ink no-underline hover:bg-chrome hover:text-ink">
+                        <AthleteFace id={a.id} photo={a.photo_path} jersey={a.jersey} />
+                        <span className="min-w-0 flex-1">
+                          <span className="flex items-baseline justify-between gap-2">
+                            <span className="truncate text-[15px] font-semibold">
+                              {athleteDisplayName(a)} {a.jersey && <span className="font-normal text-ink-meta">#{a.jersey}</span>}
+                            </span>
+                            <span className="t-caption shrink-0 tabular">
+                              {a.items_total - a.items_funded} open · {p}%
+                            </span>
+                          </span>
+                          <Meter raised={a.raised_cents} goal={a.goal_cents} showText={false} compact className="mt-1.5" label={`${athleteDisplayName(a)} ${p}% funded`} />
+                        </span>
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </Section>
+        </div>
+
+        <div className="flex min-w-0 flex-col gap-6">
+          {code && (
+            <Section title="Team code" id="code" actions={<Link href={`${base}/share`} className="text-[15px] font-semibold">Share kit</Link>}>
+              <div className="flex flex-col gap-4 rounded-[16px] bg-[var(--team-night)] p-5 text-white">
+                <div className="flex flex-col gap-1">
+                  <p className="text-[14px] text-white/75">Families and supporters use this code to see the roster.</p>
+                  <p className="t-score text-[44px] tracking-[0.18em] text-white" aria-label={`Team code ${code.code.split('').join(' ')}`}>
+                    {code.code}
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <CopyButton value={code.code} label="Copy code" surface="manager_overview" />
+                  <CopyButton value={teamLink} label="Copy team link" surface="manager_overview" />
+                  <ButtonLink href={`${base}/share#qr`} variant="ghost-inverse">
+                    QR code
+                  </ButtonLink>
+                  {ctx.canEdit && (
+                    <ButtonLink href={`${base}/share#change-code`} variant="ghost-inverse">
+                      Change code
+                    </ButtonLink>
+                  )}
+                </div>
+              </div>
+            </Section>
+          )}
+
+          <Section title="Recent donations" id="recent" actions={<Link href={`${base}/donations`} className="text-[15px] font-semibold">View all</Link>}>
+            {recent.length === 0 ? (
+              <EmptyState>No donations yet. Share the team link to get started.</EmptyState>
+            ) : (
+              <ul className="card divide-y divide-hairline-soft overflow-hidden">
+                {recent.map((d) => {
+                  const who = d.show_name ? d.donor_name : 'Anonymous';
+                  return (
+                    <li key={d.id}>
+                      <Link href={`${base}/donations/${d.id}`} className="flex min-h-14 items-center gap-3 px-4 py-3 text-ink no-underline hover:bg-chrome hover:text-ink">
+                        <Avatar name={who} size={36} className="bg-[var(--team-soft)] text-[var(--team)]" />
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-[15px] font-semibold">{who}</span>
+                          <span className="t-caption block truncate">
+                            {[d.first_name ? athleteDisplayName(d) : 'Team fund', d.items && d.items !== 'Team fund' ? d.items : null, relativeTime(d.succeeded_at)]
+                              .filter(Boolean)
+                              .join(' · ')}
+                          </span>
+                        </span>
+                        <span className="tabular text-[15px] font-semibold text-funded">+{money(d.gift_cents)}</span>
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </Section>
+        </div>
+      </div>
     </div>
+  );
+}
+
+function AthleteFace({ id, photo, jersey }: { id: string; photo: string | null; jersey: string | null }) {
+  return photo ? (
+    <span className="size-11 shrink-0 overflow-hidden rounded-full bg-[var(--team-night)]">
+      <img src={`/media/athlete/${id}?draft=1&v=${encodeURIComponent(String(photo).slice(-12))}`} alt="" width={44} height={44} loading="lazy" className="size-full origin-[50%_22%] scale-[2.4] object-cover" />
+    </span>
+  ) : (
+    <span aria-hidden className="t-score flex size-11 shrink-0 items-center justify-center rounded-full bg-[var(--team)] text-[18px] text-white">
+      {jersey ?? ''}
+    </span>
   );
 }

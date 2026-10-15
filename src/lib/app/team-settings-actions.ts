@@ -86,7 +86,7 @@ export async function changeTeamCode(teamId: string): Promise<Result> {
 
 // Team profile and privacy ------------------------------------------------------
 
-export async function saveTeamProfile(teamId: string, input: { name: string; about: string; seasonLabel: string }): Promise<Result> {
+export async function saveTeamProfile(teamId: string, input: { name: string; about: string; seasonLabel: string; color?: string | null }): Promise<Result> {
   const r = await roleOn(teamId);
   if (!r?.edit) return NO_ACCESS;
   const name = cleanUserText(input.name ?? '', 80);
@@ -94,9 +94,12 @@ export async function saveTeamProfile(teamId: string, input: { name: string; abo
   const about = cleanUserText(input.about ?? '', 1000);
   const label = cleanUserText(input.seasonLabel ?? '', 40);
   if (!label) return { ok: false, error: 'Enter a season label, like Fall 2026.', field: 'season-label' };
+  const color = input.color ? input.color.trim().toLowerCase() : null;
+  if (color && !/^#[0-9a-f]{6}$/.test(color)) return { ok: false, error: 'Pick a team color from the list.', field: 'team-color' };
   try {
     await asUser(r.user.id, async (tx) => {
-      const t = await tx.one<{ current_season_id: string | null }>(`update teams set name = $2, about = $3 where id = $1 returning current_season_id`, [teamId, name, about]);
+      const t = await tx.one<{ current_season_id: string | null }>(`update teams set name = $2, about = $3, color = case when $5 then $4 else color end where id = $1 returning current_season_id`,
+        [teamId, name, about, color, input.color !== undefined]);
       if (t?.current_season_id) await tx.query(`update seasons set label = $2 where id = $1`, [t.current_season_id, label]);
     });
     refresh(teamId);

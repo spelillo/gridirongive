@@ -3,7 +3,7 @@ import { cookies } from 'next/headers';
 import { searchTeams, type PublicTeam } from '@/lib/queries/public';
 import { SearchField } from '@/components/public/SearchField';
 import { CodeEntryLink } from '@/components/public/CodeEntryLink';
-import { TeamRow } from '@/components/public/TeamRow';
+import { TeamCard } from '@/components/public/TeamCard';
 import { Banner } from '@/components/ui/Banner';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ButtonLink } from '@/components/ui/Button';
@@ -93,13 +93,17 @@ export default async function SearchPage({ searchParams }: Props) {
   const countText = `${pluralize(total, 'team')}${v.q ? ` for "${v.q}"` : ''}`;
 
   return (
-    <div className="page-x mx-auto flex w-full max-w-[1200px] flex-col gap-6 py-6 md:py-8">
-      <div className="flex flex-col gap-4">
-        <h1 className="t-section">Find a team</h1>
+    <>
+    <div className="border-b border-hairline-soft bg-chrome">
+      <div className="page-x mx-auto flex w-full max-w-[1280px] flex-col gap-4 py-8 md:py-10">
+        <h1 className="t-hero">Find a team</h1>
+        <p className="t-body -mt-2 max-w-2xl">Search by school, team or town. Players can&apos;t be searched by name.</p>
         <div className="max-w-3xl">
           <SearchField size="lg" defaultValue={v.q} keepParams={keep} showButton label="Search by school, team, or town" />
         </div>
       </div>
+    </div>
+    <div className="page-x mx-auto flex w-full max-w-[1280px] flex-col gap-6 py-6 md:py-8">
 
       <SearchFilters values={values} options={{ sports: SITE.sports, levels: SITE.levels, states: STATES }} />
 
@@ -134,9 +138,9 @@ export default async function SearchPage({ searchParams }: Props) {
             <p className="t-caption" role="status">
               {teams.length < total ? `Showing ${teams.length} of ${countText}` : countText}
             </p>
-            <ul className="flex flex-col gap-3">
+            <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {teams.map((t) => (
-                <TeamRow key={t.id} team={t} />
+                <TeamCard key={t.id} team={t} />
               ))}
             </ul>
             {teams.length < total && v.page < MAX_PAGES && (
@@ -155,5 +159,6 @@ export default async function SearchPage({ searchParams }: Props) {
         )}
       </section>
     </div>
+    </>
   );
 }

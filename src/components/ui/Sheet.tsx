@@ -117,7 +117,7 @@ export function Sheet({
           onPointerCancel={onPointerUp}
           aria-hidden
         >
-          <span className="h-1 w-10 rounded-[2px] bg-hairline-soft" />
+          <span className="h-1.5 w-10 rounded-full bg-[#cfd6e1]" />
         </div>
         <header className="flex items-start justify-between gap-4 border-b border-hairline-soft px-6 pb-4 pt-3 md:pt-6">
           <h2 id={titleId} className="t-subhead pt-1">

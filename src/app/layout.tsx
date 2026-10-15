@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import '@fontsource-variable/inter';
+import '@fontsource/barlow-condensed/600.css';
+import '@fontsource/barlow-condensed/700.css';
 import './globals.css';
 import { ToastProvider } from '@/components/ui/Toast';
 import { env } from '@/lib/env';

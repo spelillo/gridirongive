@@ -12,8 +12,10 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ['@electric-sql/pglite'],
   // The demo database (PGlite) applies these SQL files at startup, so every
   // server route needs them in its bundle on Vercel.
+  // Demo images live in public/demo and the media route reads them from disk.
   outputFileTracingIncludes: {
     '/*': ['./supabase/migrations/**/*.sql', './db/**/*.sql'],
+    '/media/**': ['./public/demo/**/*'],
   },
   poweredByHeader: false,
   async headers() {

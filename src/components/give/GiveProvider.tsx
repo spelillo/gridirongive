@@ -1,6 +1,7 @@
 'use client';
 import { createContext, useCallback, useContext, useState, type ReactNode } from 'react';
 import { Sheet } from '@/components/ui/Sheet';
+import { teamVars } from '@/config/team-colors';
 import { Button, type ButtonVariant } from '@/components/ui/Button';
 import { track } from '@/lib/analytics-client';
 import { GiveForm } from './GiveForm';
@@ -35,11 +36,13 @@ export function GiveProvider({ config, children }: { config: GiveConfig; childre
   return (
     <Ctx.Provider value={{ open, isOpen: Boolean(target), config }}>
       {children}
-      <Sheet open={Boolean(target)} onClose={close} title={title} locked={locked} size="lg" initialFocusSelector="[data-autofocus], [role=radio][aria-checked=true], input">
-        {target && (
-          <GiveForm key={instance} config={config} target={target} onClose={close} onLockChange={setLocked} onRetarget={(t) => setTarget(t)} />
-        )}
-      </Sheet>
+      <div className="contents" style={teamVars(config.team.color) as React.CSSProperties}>
+        <Sheet open={Boolean(target)} onClose={close} title={title} locked={locked} size="lg" initialFocusSelector="[data-autofocus], [role=radio][aria-checked=true], input">
+          {target && (
+            <GiveForm key={instance} config={config} target={target} onClose={close} onLockChange={setLocked} onRetarget={(t) => setTarget(t)} />
+          )}
+        </Sheet>
+      </div>
     </Ctx.Provider>
   );
 }
