@@ -9,8 +9,9 @@
  *
  * What it does, in order. Every step is safe to run again.
  *   1. Reads the Supabase project's API keys and pooler address.
- *   2. Finds the database password: SUPABASE_DB_PASSWORD, else the one the
- *      Supabase integration stored in Vercel, else sets a new one.
+ *   2. Finds a working database password: SUPABASE_DB_PASSWORD, else the
+ *      one the Supabase integration stored in Vercel, else the existing
+ *      DATABASE_URL. Supabase only lets the dashboard reset it.
  *   3. Applies supabase/migrations (scripts/migrate.mjs).
  *   4. Sets the sign-in redirect URLs and the sign-in email templates.
  *   5. With STRIPE_SECRET_KEY: creates the two webhook destinations.
@@ -24,7 +25,7 @@
  *   VERCEL_TEAM            team slug, default synth10
  *   APP_URL                default https://gridirongive-nine.vercel.app
  *   ADMIN_EMAILS           default spelillo11@gmail.com
- *   SUPABASE_DB_PASSWORD   use this password instead of finding or setting one
+ *   SUPABASE_DB_PASSWORD   the database password (Supabase dashboard > Database settings)
  *   STRIPE_SECRET_KEY, STRIPE_PUBLISHABLE_KEY
  *   SKIP_DEPLOY=1          stop after writing the environment variables
  *
@@ -171,7 +172,12 @@ async function main() {
     const pooler = await sb('GET', `/v1/projects/${cfg.ref}/config/database/pooler`).catch(() => null);
     const primary = Array.isArray(pooler) ? (pooler.find((p) => p.database_type === 'PRIMARY') ?? pooler[0]) : pooler;
     poolerHost = primary?.db_host ?? `aws-0-${sbProject.region}.pooler.supabase.com`;
-    if (primary?.db_user) poolerUser = primary.db_user;
+    // The shared pooler wants "postgres.<ref>"; take it from the connection string when given.
+    let user = primary?.db_user;
+    try {
+      if (primary?.connection_string) user = decodeURIComponent(new URL(primary.connection_string.replace('[YOUR-PASSWORD]', 'x')).username) || user;
+    } catch {}
+    if (user) poolerUser = user.includes('.') ? user : `${user}.${cfg.ref}`;
   }
   console.log(`  pooler: ${poolerHost}`);
 
@@ -193,23 +199,24 @@ async function main() {
     } catch {}
   }
   let password;
-  for (const [source, pw] of candidates) {
-    if (await canConnect(urlsFor(pw).session)) {
-      password = pw;
-      note(`Database password: from ${source}`);
-      break;
+  search: for (const [source, pw] of candidates) {
+    // A password reset in the dashboard can take a minute to reach the pooler.
+    const attempts = pw === cfg.dbPassword ? 6 : 1;
+    for (let i = 0; i < attempts; i++) {
+      if (i) await sleep(cfg.waitMs);
+      if (await canConnect(urlsFor(pw).session)) {
+        password = pw;
+        note(`Database password: from ${source}`);
+        break search;
+      }
     }
   }
   if (!password) {
-    password = mask(randomBytes(24).toString('hex'));
-    await sb('POST', `/v1/projects/${cfg.ref}/database/query`, { query: `alter role postgres with password '${password}'` });
-    note('Database password: set a new one (stored only in Vercel as part of DATABASE_URL)');
-    let ok = false;
-    for (let i = 0; i < 12 && !ok; i++) {
-      if (i) await sleep(cfg.waitMs);
-      ok = await canConnect(urlsFor(password).session);
-    }
-    if (!ok) throw new Error('Set a new database password but could not connect with it through the pooler.');
+    // Supabase only lets the dashboard change the postgres password, so it has to be supplied.
+    throw new Error(
+      `No working database password. Reset it at https://supabase.com/dashboard/project/${cfg.ref}/database/settings ` +
+        '(Reset database password), add it as the repository secret SUPABASE_DB_PASSWORD, and run this again.',
+    );
   }
   const urls = urlsFor(password);
   mask(urls.transaction);
@@ -234,15 +241,22 @@ async function main() {
   const link = '{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=email';
   const body = (lead) =>
     `<h2>${lead}</h2>\n<p><a href="${link}">Sign in</a>. The link works for 1 hour.</p>\n<p>Or enter this code: <strong>{{ .Token }}</strong></p>\n<p>If you didn't ask for this, you can ignore it.</p>`;
-  await sb('PATCH', `/v1/projects/${cfg.ref}/config/auth`, {
-    site_url: cfg.appUrl,
-    uri_allow_list: [...allow].join(','),
-    mailer_subjects_magic_link: 'Your Gridiron Give sign-in',
-    mailer_templates_magic_link_content: body('Sign in to Gridiron Give'),
-    mailer_subjects_confirmation: 'Your Gridiron Give sign-in',
-    mailer_templates_confirmation_content: body('Welcome to Gridiron Give'),
-  });
-  note(`Sign-in: site URL ${cfg.appUrl}, callback allowed, email templates set`);
+  await sb('PATCH', `/v1/projects/${cfg.ref}/config/auth`, { site_url: cfg.appUrl, uri_allow_list: [...allow].join(',') });
+  note(`Sign-in: site URL ${cfg.appUrl}, callback allowed`);
+  // Supabase's free plan only allows template changes once a custom SMTP sender is set.
+  // The default templates still work: their link signs in on the device that asked for it.
+  try {
+    await sb('PATCH', `/v1/projects/${cfg.ref}/config/auth`, {
+      mailer_subjects_magic_link: 'Your Gridiron Give sign-in',
+      mailer_templates_magic_link_content: body('Sign in to Gridiron Give'),
+      mailer_subjects_confirmation: 'Your Gridiron Give sign-in',
+      mailer_templates_confirmation_content: body('Welcome to Gridiron Give'),
+    });
+    note('Sign-in emails: Gridiron Give templates with a link that works on any device and a 6-digit code');
+  } catch (err) {
+    if (err.status !== 400) throw err;
+    note('Sign-in emails: kept Supabase\'s default templates (custom templates need a custom SMTP sender on the free plan)');
+  }
 
   // ---------------------------------------------------------------- Stripe
   const vars = {
