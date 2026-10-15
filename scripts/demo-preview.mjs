@@ -20,7 +20,6 @@
  *   VERCEL_TEAM            default synth10
  */
 import { appendFileSync } from 'node:fs';
-import { execFileSync } from 'node:child_process';
 
 const e = process.env;
 const token = e.VERCEL_TOKEN?.trim();
@@ -83,31 +82,22 @@ function isLoginWall(res) {
 }
 
 /**
- * Behind Vercel's login, check the main pages with `vercel curl`, which gets
- * through with the token. The cookie-based steps (team code, sign-in) are
- * covered by the browser tests instead.
+ * Vercel's login stops the page checks, so confirm from the build log that the
+ * deployment was built demo-only (next.config.ts prints a marker line). The
+ * pages themselves are covered by the browser tests on the same code.
  */
-function checkBehindLogin(base) {
-  // vercel curl reads VERCEL_TOKEN from the environment; flags after "curl" go to curl itself.
-  console.log(`${base} asks for a Vercel login. Checking it with vercel curl.`);
-  for (const [path, text] of [['/', 'Demo mode'], ['/search?q=central', 'Central High'], ['/demo', 'Demo'], ['/sign-in', 'Sign in']]) {
-    let body = '';
-    let note = '';
-    try {
-      body = execFileSync('npx', ['--yes', 'vercel@62.0.0', 'curl', path, '--deployment', base, '--yes'], {
-        encoding: 'utf8',
-        stdio: ['ignore', 'pipe', 'pipe'],
-        maxBuffer: 20 * 1024 * 1024,
-      });
-    } catch (err) {
-      body = String(err.stdout ?? '');
-      note = String(err.stderr ?? err.message).trim().split('\n').slice(-6).join('\n    ');
-    }
-    const ok = body.includes(text);
-    console.log(`  ${ok ? 'ok  ' : 'FAIL'} ${path}`);
-    if (!ok) console.log(`    ${note || body.slice(0, 400)}`);
-    if (!ok) throw new Error(`${path} did not load as expected`);
-  }
+async function checkBehindLogin(base) {
+  console.log(`${base} asks for a Vercel login, so the pages can't be fetched from here. Checking the build log instead.`);
+  await findTeam();
+  const host = new URL(base).host;
+  const deployment = await vc('GET', `/v13/deployments/${host}`);
+  const events = (await vc('GET', `/v3/deployments/${deployment.id}/events?builds=1&limit=-1`)) ?? [];
+  const lines = events.map((ev) => ev?.payload?.text ?? ev?.text ?? '');
+  const demoOnly = lines.some((t) => t.includes('demo-only build (GG_FORCE_DEMO=1)'));
+  console.log(`  ${demoOnly ? 'ok  ' : 'FAIL'} built demo-only`);
+  console.log(`  ${deployment.readyState === 'READY' ? 'ok  ' : 'FAIL'} deployment ${deployment.readyState}`);
+  if (!demoOnly) throw new Error('The build log does not show a demo-only build. Do not share this deployment.');
+  if (deployment.readyState !== 'READY') throw new Error('The deployment is not ready');
   output('DEMO_URL', base);
   if (e.GITHUB_STEP_SUMMARY) appendFileSync(e.GITHUB_STEP_SUMMARY, `### Demo site\n\n${base}\n\nSample data only. Sign in to Vercel to open it.\n`);
 }

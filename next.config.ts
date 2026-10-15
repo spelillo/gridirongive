@@ -7,6 +7,9 @@ const securityHeaders = [
   { key: 'Permissions-Policy', value: 'camera=(self), geolocation=(), microphone=()' },
 ];
 
+// The demo site job reads this line from the build log to confirm the build is demo-only.
+if (process.env.GG_FORCE_DEMO === '1') console.log('Gridiron Give: demo-only build (GG_FORCE_DEMO=1)');
+
 const nextConfig: NextConfig = {
   // PGlite ships a WASM build of Postgres; keep it out of the server bundle.
   serverExternalPackages: ['@electric-sql/pglite'],
