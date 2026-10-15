@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - name: Unit and integration tests (embedded database)
+        run: npm test
+      - name: Integration tests (Postgres 16, same engine as Supabase)
+        run: npm test
+        env:
+          TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
+      - name: Migrations apply cleanly with the live migration script, and a second run is a no-op
+        # Supabase provides the auth schema; db/local-auth.sql stands in for it here.
+        run: |
+          psql postgres://postgres:postgres@localhost:5432/postgres -c 'create database live_check'
+          psql postgres://postgres:postgres@localhost:5432/live_check -v ON_ERROR_STOP=1 -f db/local-auth.sql
+          npm run db:migrate
+          npm run db:migrate | grep -q 'up to date'
+        env:
+          MIGRATION_DATABASE_URL: postgres://postgres:postgres@localhost:5432/live_check
+      - run: npx playwright install --with-deps chromium
+      - name: Browser tests with accessibility checks (desktop and mobile)
+        run: npm run test:e2e
+        env:
+          CI: 'true'
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report
+          retention-days: 7

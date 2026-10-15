@@ -1,0 +1,9 @@
+{
+  "name": "Gridiron Give",
+  "short_name": "Gridiron Give",
+  "start_url": "/app",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#f5f6f7",
+  "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+}
