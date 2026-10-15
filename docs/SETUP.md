@@ -23,6 +23,8 @@ Every variable is also listed, with comments, in [`.env.example`](../.env.exampl
    ```
 
    This applies every file in `supabase/migrations` once, in order, and records it in `public._migrations`. Running it again only applies new files. It also creates the four private storage buckets (`photos`, `team`, `receipts`, `verification`). Add `--dry-run` to see what would run.
+
+   **Without a terminal:** add the same string as the repository secret `MIGRATION_DATABASE_URL` (GitHub > Settings > Secrets and variables > Actions > New repository secret), then open Actions > Migrate database > Run workflow. The workflow (`.github/workflows/migrate.yml`) also runs by itself whenever a push to `main` changes a migration.
 3. **Copy the app's database URL.** From the same page, copy the **transaction pooler** string (port 6543). That is `DATABASE_URL`. The app disables prepared statements so it works with the transaction pooler.
 4. **Copy the API keys.** Project Settings > API:
    - `NEXT_PUBLIC_SUPABASE_URL`: the project URL

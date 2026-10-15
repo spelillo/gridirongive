@@ -1,0 +1,44 @@
+name: Migrate database
+
+# Applies supabase/migrations to the live Supabase database with
+# `npm run db:migrate`. Runs when you press "Run workflow" on the Actions tab,
+# and on every push to main that changes a migration. Needs the repository
+# secret MIGRATION_DATABASE_URL (Supabase session pooler string, port 5432);
+# without it the job does nothing. See docs/SETUP.md.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['supabase/migrations/**']
+
+concurrency:
+  group: migrate-database
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    env:
+      MIGRATION_DATABASE_URL: ${{ secrets.MIGRATION_DATABASE_URL }}
+    steps:
+      - name: Check for the database secret
+        id: secret
+        run: |
+          if [ -z "$MIGRATION_DATABASE_URL" ]; then
+            echo "MIGRATION_DATABASE_URL is not set, so there is nothing to migrate. Add it in Settings > Secrets and variables > Actions." >> "$GITHUB_STEP_SUMMARY"
+            echo "present=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          fi
+      - if: steps.secret.outputs.present == 'true'
+        uses: actions/checkout@v4
+      - if: steps.secret.outputs.present == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - if: steps.secret.outputs.present == 'true'
+        run: npm ci
+      - if: steps.secret.outputs.present == 'true'
+        run: npm run db:migrate
