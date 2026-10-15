@@ -88,12 +88,13 @@ function isLoginWall(res) {
  * covered by the browser tests instead.
  */
 function checkBehindLogin(base) {
+  // vercel curl reads VERCEL_TOKEN from the environment; flags after "curl" go to curl itself.
   console.log(`${base} asks for a Vercel login. Checking it with vercel curl.`);
   for (const [path, text] of [['/', 'Demo mode'], ['/search?q=central', 'Central High'], ['/demo', 'Demo'], ['/sign-in', 'Sign in']]) {
     let body = '';
     let note = '';
     try {
-      body = execFileSync('npx', ['--yes', 'vercel@62.0.0', '--token', token, 'curl', path, '--deployment', base, '--yes'], {
+      body = execFileSync('npx', ['--yes', 'vercel@62.0.0', 'curl', path, '--deployment', base, '--yes'], {
         encoding: 'utf8',
         stdio: ['ignore', 'pipe', 'pipe'],
         maxBuffer: 20 * 1024 * 1024,
