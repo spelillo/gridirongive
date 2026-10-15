@@ -85,7 +85,7 @@ The platform fee is **$1.00 + 1% of the gift** by default, set in one place (`sr
 
 ## 4. Vercel
 
-1. Import the GitHub repository. The framework preset (Next.js) and default build command are correct.
+1. Import the GitHub repository. `vercel.json` sets the framework (Next.js), install and build commands, so they apply even if the project was first created for the old Vite mockup. If Settings > Build and Deployment has a Root Directory set (for example `bolt`), clear it.
 2. **Environment variables** (Settings > Environment Variables), for Production and Preview:
 
    | Variable | Required in live mode | Notes |
