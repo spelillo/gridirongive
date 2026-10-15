@@ -1,0 +1,58 @@
+name: Go live
+
+# Connects Vercel to Supabase (and Stripe when its keys are present),
+# applies the database migrations, sets the sign-in settings and redeploys
+# production. Run it from the Actions tab with "Run workflow". It is safe to
+# run again. See scripts/go-live.mjs and docs/SETUP.md.
+#
+# Repository secrets (Settings > Secrets and variables > Actions):
+#   SUPABASE_ACCESS_TOKEN  required, from supabase.com/dashboard/account/tokens
+#   VERCEL_TOKEN           required, from vercel.com/account/settings/tokens
+#   STRIPE_SECRET_KEY, STRIPE_PUBLISHABLE_KEY, SUPABASE_DB_PASSWORD  optional
+
+on:
+  workflow_dispatch:
+    inputs:
+      app_url:
+        description: Site address
+        default: https://gridirongive-nine.vercel.app
+      admin_emails:
+        description: Admin emails, comma separated
+        default: spelillo11@gmail.com
+      supabase_project_ref:
+        description: Supabase project ref
+        default: piofwrrwsbyeyhkjwhme
+      vercel_project:
+        description: Vercel project name
+        default: gridirongive
+      vercel_team:
+        description: Vercel team slug
+        default: synth10
+
+concurrency:
+  group: go-live
+  cancel-in-progress: false
+
+jobs:
+  go-live:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: node scripts/go-live.mjs
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          STRIPE_PUBLISHABLE_KEY: ${{ secrets.STRIPE_PUBLISHABLE_KEY }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          APP_URL: ${{ inputs.app_url }}
+          ADMIN_EMAILS: ${{ inputs.admin_emails }}
+          SUPABASE_PROJECT_REF: ${{ inputs.supabase_project_ref }}
+          VERCEL_PROJECT: ${{ inputs.vercel_project }}
+          VERCEL_TEAM: ${{ inputs.vercel_team }}

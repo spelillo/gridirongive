@@ -13,6 +13,12 @@ Every variable is also listed, with comments, in [`.env.example`](../.env.exampl
 | Both Stripe keys set | Real Stripe payments (use test keys first). Without them, demo mode simulates card payments and live mode refuses to take gifts. |
 | `RESEND_API_KEY` set | Email is sent through Resend. Without it, email is kept in the on-site outbox at `/dev/outbox` (demo) or the admin email log. |
 
+## The quick way: the Go live workflow
+
+Steps 1, 4 and the Stripe webhooks below can be done in one go by GitHub Actions. Add the repository secrets `SUPABASE_ACCESS_TOKEN` (supabase.com/dashboard/account/tokens) and `VERCEL_TOKEN` (vercel.com/account/settings/tokens, scoped to the project's team), and optionally `STRIPE_SECRET_KEY` and `STRIPE_PUBLISHABLE_KEY`. Then open Actions > Go live > Run workflow. It reads the Supabase keys and pooler address, applies the migrations, sets the sign-in URLs and email templates, creates the two Stripe webhook destinations, writes every Vercel environment variable (keeping an existing `APP_SECRET` and `CRON_SECRET`), redeploys production and checks the live site. It is safe to run again, for example after adding the Stripe keys. If it cannot find the database password, it sets a new one; set `SUPABASE_DB_PASSWORD` to use your own. Details are at the top of `scripts/go-live.mjs`.
+
+The manual steps follow.
+
 ## 1. Supabase
 
 1. Create a project at supabase.com. Pick the region closest to your users.
