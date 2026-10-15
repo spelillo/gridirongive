@@ -20,6 +20,7 @@
  *   VERCEL_TEAM            default synth10
  */
 import { appendFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
 
 const e = process.env;
 const token = e.VERCEL_TOKEN?.trim();
@@ -75,6 +76,38 @@ async function prepare() {
   if (project.ssoProtection) console.log('Preview deployments ask for a Vercel login (Deployment Protection).');
 }
 
+/** Vercel's Deployment Protection answers with 401, or a redirect to its login page. */
+function isLoginWall(res) {
+  const to = res.headers.get('location') ?? '';
+  return res.status === 401 || res.status === 403 || (res.status >= 300 && res.status < 400 && /vercel\.com|_vercel\/sso/.test(to));
+}
+
+/**
+ * Behind Vercel's login, check the main pages with `vercel curl`, which gets
+ * through with the token. The cookie-based steps (team code, sign-in) are
+ * covered by the browser tests instead.
+ */
+function checkBehindLogin(base) {
+  console.log(`${base} asks for a Vercel login. Checking it with vercel curl.`);
+  for (const [path, text] of [['/', 'Demo mode'], ['/search?q=central', 'Central High'], ['/demo', 'Demo'], ['/sign-in', 'Sign in']]) {
+    let body = '';
+    try {
+      body = execFileSync('npx', ['--yes', 'vercel@62.0.0', 'curl', path, '--deployment', base, '--yes', '--token', token], {
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'pipe'],
+        maxBuffer: 20 * 1024 * 1024,
+      });
+    } catch (err) {
+      body = String(err.stdout ?? '');
+    }
+    const ok = body.includes(text);
+    console.log(`  ${ok ? 'ok  ' : 'FAIL'} ${path}`);
+    if (!ok) throw new Error(`${path} did not load as expected`);
+  }
+  output('DEMO_URL', base);
+  if (e.GITHUB_STEP_SUMMARY) appendFileSync(e.GITHUB_STEP_SUMMARY, `### Demo site\n\n${base}\n\nSample data only. Sign in to Vercel to open it.\n`);
+}
+
 const bypassHeaders = () => (e.VERCEL_BYPASS ? { 'x-vercel-protection-bypass': e.VERCEL_BYPASS } : {});
 const get = (url, init = {}) => fetch(url, { ...init, headers: { ...bypassHeaders(), ...(init.headers ?? {}) } });
 
@@ -92,12 +125,8 @@ async function check(deploymentUrl) {
   console.log(`Checking ${base}`);
   // The first request on a new server instance seeds the demo data, which takes a few seconds.
   for (let i = 0; ; i++) {
-    const res = await get(base).catch(() => null);
-    if (res?.status === 401 || res?.status === 403) {
-      console.log(`${base} asks for a Vercel login, so the smoke test can't run. Open it while signed in to Vercel.`);
-      output('DEMO_URL', base);
-      return;
-    }
+    const res = await get(base, { redirect: 'manual' }).catch(() => null);
+    if (res && isLoginWall(res)) return checkBehindLogin(base);
     if (res?.ok) break;
     if (i === 10) throw new Error(`${base} is not responding (${res?.status ?? 'no response'})`);
     await new Promise((r) => setTimeout(r, 3000));
