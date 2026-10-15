@@ -241,15 +241,22 @@ async function main() {
   const link = '{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=email';
   const body = (lead) =>
     `<h2>${lead}</h2>\n<p><a href="${link}">Sign in</a>. The link works for 1 hour.</p>\n<p>Or enter this code: <strong>{{ .Token }}</strong></p>\n<p>If you didn't ask for this, you can ignore it.</p>`;
-  await sb('PATCH', `/v1/projects/${cfg.ref}/config/auth`, {
-    site_url: cfg.appUrl,
-    uri_allow_list: [...allow].join(','),
-    mailer_subjects_magic_link: 'Your Gridiron Give sign-in',
-    mailer_templates_magic_link_content: body('Sign in to Gridiron Give'),
-    mailer_subjects_confirmation: 'Your Gridiron Give sign-in',
-    mailer_templates_confirmation_content: body('Welcome to Gridiron Give'),
-  });
-  note(`Sign-in: site URL ${cfg.appUrl}, callback allowed, email templates set`);
+  await sb('PATCH', `/v1/projects/${cfg.ref}/config/auth`, { site_url: cfg.appUrl, uri_allow_list: [...allow].join(',') });
+  note(`Sign-in: site URL ${cfg.appUrl}, callback allowed`);
+  // Supabase's free plan only allows template changes once a custom SMTP sender is set.
+  // The default templates still work: their link signs in on the device that asked for it.
+  try {
+    await sb('PATCH', `/v1/projects/${cfg.ref}/config/auth`, {
+      mailer_subjects_magic_link: 'Your Gridiron Give sign-in',
+      mailer_templates_magic_link_content: body('Sign in to Gridiron Give'),
+      mailer_subjects_confirmation: 'Your Gridiron Give sign-in',
+      mailer_templates_confirmation_content: body('Welcome to Gridiron Give'),
+    });
+    note('Sign-in emails: Gridiron Give templates with a link that works on any device and a 6-digit code');
+  } catch (err) {
+    if (err.status !== 400) throw err;
+    note('Sign-in emails: kept Supabase\'s default templates (custom templates need a custom SMTP sender on the free plan)');
+  }
 
   // ---------------------------------------------------------------- Stripe
   const vars = {
