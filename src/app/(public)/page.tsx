@@ -49,8 +49,8 @@ export default async function Landing() {
           aria-hidden
           className="absolute inset-0 -z-10 opacity-[0.07] [background-image:repeating-linear-gradient(90deg,#fff_0_2px,transparent_2px_120px)] [mask-image:linear-gradient(to_bottom,transparent,black_30%,black_70%,transparent)]"
         />
-        <div className="page-x mx-auto grid max-w-[1280px] gap-10 py-12 md:py-20 lg:grid-cols-[1.25fr_1fr] lg:items-center lg:gap-16">
-          <div className="flex flex-col gap-5">
+        <div className="page-x mx-auto grid max-w-[1280px] grid-cols-1 gap-10 py-12 md:py-20 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)] lg:items-center lg:gap-16">
+          <div className="flex min-w-0 flex-col gap-5">
             <p className="text-[13px] font-semibold tracking-[0.08em] text-[#9db5ff] uppercase">Gear for school and youth teams</p>
             <h1 id="find" className="text-[40px] leading-[44px] font-bold tracking-[-0.03em] text-white md:text-[60px] md:leading-[62px]">
               Find a team

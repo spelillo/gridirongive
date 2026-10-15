@@ -1,39 +1,32 @@
 #!/usr/bin/env node
 /**
- * Hosts the demo (sample teams, players and gifts) on its own Vercel project,
- * separate from the live site. The demo project has no database or payment
- * settings, so the app runs in demo mode on its embedded database and can
- * never reach the real Supabase or Stripe accounts.
+ * Hosts the demo (sample teams, players and gifts) as a preview deployment
+ * of the Vercel project, never production. The build is made with
+ * GG_FORCE_DEMO=1, which makes it ignore every database, Supabase, Stripe
+ * and email setting (see src/lib/env.ts), so it runs on its embedded demo
+ * database and can't reach the real accounts even though the project has
+ * them. If a separate project with no live settings exists (DEMO_VERCEL_PROJECT),
+ * that one is used instead.
  *
- *   node scripts/demo-preview.mjs prepare        find or create the project, refuse if it has live settings
+ *   node scripts/demo-preview.mjs prepare        find the project and link the deploy to it
  *   node scripts/demo-preview.mjs check <url>    smoke-test a deployment and print the demo address
  *                                                (without VERCEL_TOKEN it checks <url> itself, e.g. http://localhost:3000)
  *
  * Run by .github/workflows/demo-preview.yml. Needs VERCEL_TOKEN.
  *
  * Optional:
- *   DEMO_VERCEL_PROJECT    default gridirongive-demo
+ *   DEMO_VERCEL_PROJECT    a demo-only project to prefer, default gridirongive-demo
+ *   VERCEL_PROJECT         the main project, default gridirongive
  *   VERCEL_TEAM            default synth10
  */
 import { appendFileSync } from 'node:fs';
 
 const e = process.env;
 const token = e.VERCEL_TOKEN?.trim();
-const projectName = e.DEMO_VERCEL_PROJECT?.trim() || 'gridirongive-demo';
+const demoProjectName = e.DEMO_VERCEL_PROJECT?.trim() || 'gridirongive-demo';
+const mainProjectName = e.VERCEL_PROJECT?.trim() || 'gridirongive';
 const teamSlug = e.VERCEL_TEAM?.trim() || 'synth10';
 const api = e.VERCEL_API_BASE || 'https://api.vercel.com';
-
-/** Settings that would switch the app out of demo mode or connect it to real accounts. */
-const LIVE_SETTINGS = [
-  'DATABASE_URL',
-  'NEXT_PUBLIC_SUPABASE_URL',
-  'NEXT_PUBLIC_SUPABASE_ANON_KEY',
-  'SUPABASE_SERVICE_ROLE_KEY',
-  'STRIPE_SECRET_KEY',
-  'NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY',
-  'STRIPE_WEBHOOK_SECRET',
-  'RESEND_API_KEY',
-];
 
 let teamQuery = '';
 async function vc(method, path, body) {
@@ -66,24 +59,27 @@ async function findTeam() {
 
 async function prepare() {
   await findTeam();
-  let project = await vc('GET', `/v9/projects/${encodeURIComponent(projectName)}`);
-  if (!project) {
-    console.log(`Creating Vercel project ${projectName}`);
-    project = await vc('POST', '/v11/projects', { name: projectName, framework: 'nextjs' });
-  } else {
-    console.log(`Using Vercel project ${projectName}`);
-  }
-  const envs = (await vc('GET', `/v9/projects/${project.id}/env`))?.envs ?? [];
-  const live = envs.map((v) => v.key).filter((k) => LIVE_SETTINGS.includes(k));
-  if (live.length) {
-    throw new Error(`The demo project has live settings (${live.join(', ')}). Remove them in Vercel so the demo can't reach real data.`);
-  }
+  const project =
+    (await vc('GET', `/v9/projects/${encodeURIComponent(demoProjectName)}`)) ?? (await vc('GET', `/v9/projects/${encodeURIComponent(mainProjectName)}`));
+  if (!project) throw new Error(`The Vercel token can't see the project "${mainProjectName}".`);
+  console.log(`Deploying a demo-only preview of ${project.name}`);
   output('VERCEL_ORG_ID', project.accountId);
   output('VERCEL_PROJECT_ID', project.id);
+  // Preview deployments may sit behind Vercel's login. A bypass secret, when the
+  // project has one, lets the smoke test through; it is never printed.
+  const bypass = Object.keys(project.protectionBypass ?? {})[0];
+  if (bypass && e.GITHUB_ENV) {
+    console.log(`::add-mask::${bypass}`);
+    appendFileSync(e.GITHUB_ENV, `VERCEL_BYPASS=${bypass}\n`);
+  }
+  if (project.ssoProtection) console.log('Preview deployments ask for a Vercel login (Deployment Protection).');
 }
 
+const bypassHeaders = () => (e.VERCEL_BYPASS ? { 'x-vercel-protection-bypass': e.VERCEL_BYPASS } : {});
+const get = (url, init = {}) => fetch(url, { ...init, headers: { ...bypassHeaders(), ...(init.headers ?? {}) } });
+
 async function expectPage(base, path, text, init) {
-  const res = await fetch(`${base}${path}`, { redirect: 'manual', ...init });
+  const res = await get(`${base}${path}`, { redirect: 'manual', ...init });
   const body = res.status < 300 ? await res.text() : '';
   const ok = res.status < 400 && (!text || body.includes(text));
   console.log(`  ${ok ? 'ok  ' : 'FAIL'} ${path} (${res.status})`);
@@ -91,43 +87,39 @@ async function expectPage(base, path, text, init) {
   return res;
 }
 
-async function demoAddress(deploymentUrl) {
-  if (!token) return deploymentUrl.replace(/\/$/, '');
-  await findTeam();
-  const project = await vc('GET', `/v9/projects/${encodeURIComponent(projectName)}`);
-  const domains = (await vc('GET', `/v9/projects/${project.id}/domains`))?.domains ?? [];
-  const domain = domains.map((d) => d.name).find((n) => n.endsWith('.vercel.app')) ?? domains[0]?.name;
-  return domain ? `https://${domain}` : deploymentUrl.replace(/\/$/, '');
-}
-
 async function check(deploymentUrl) {
-  const base = await demoAddress(deploymentUrl);
+  const base = deploymentUrl.replace(/\/$/, '');
   console.log(`Checking ${base}`);
   // The first request on a new server instance seeds the demo data, which takes a few seconds.
   for (let i = 0; ; i++) {
-    const res = await fetch(base).catch(() => null);
+    const res = await get(base).catch(() => null);
+    if (res?.status === 401 || res?.status === 403) {
+      console.log(`${base} asks for a Vercel login, so the smoke test can't run. Open it while signed in to Vercel.`);
+      output('DEMO_URL', base);
+      return;
+    }
     if (res?.ok) break;
     if (i === 10) throw new Error(`${base} is not responding (${res?.status ?? 'no response'})`);
     await new Promise((r) => setTimeout(r, 3000));
   }
   await expectPage(base, '/', 'Demo mode');
   await expectPage(base, '/search?q=central', 'Central High');
-  const unlock = await fetch(`${base}/api/unlock/link?slug=central-high-football&code=KX7P2Q`, { redirect: 'manual' });
+  const unlock = await get(`${base}/api/unlock/link?slug=central-high-football&code=KX7P2Q`, { redirect: 'manual' });
   const codeCookie = unlock.headers.get('set-cookie')?.split(';')[0] ?? '';
   await expectPage(base, '/t/central-high-football', 'Ethan D.', { headers: { cookie: codeCookie } });
   await expectPage(base, '/t/central-high-football/ethan-d-3', 'Helmet', { headers: { cookie: codeCookie } });
   await expectPage(base, '/demo', 'Demo');
-  const athlete = await fetch(`${base}/t/central-high-football/ethan-d-3`, { headers: { cookie: codeCookie } }).then((r) => r.text());
+  const athlete = await get(`${base}/t/central-high-football/ethan-d-3`, { headers: { cookie: codeCookie } }).then((r) => r.text());
   const img = athlete.match(/\/media\/athlete\/[0-9a-f-]{36}[^"]*/)?.[0]?.replace(/&amp;/g, '&');
   if (img) await expectPage(base, img, '', { headers: { cookie: codeCookie } });
   const form = new FormData();
   form.set('email', 'coach.alex@example.com');
   form.set('next', '/app');
-  const signIn = await fetch(`${base}/api/auth/demo`, { method: 'POST', body: form, redirect: 'manual' });
+  const signIn = await get(`${base}/api/auth/demo`, { method: 'POST', body: form, redirect: 'manual' });
   const cookie = signIn.headers.get('set-cookie')?.split(';')[0];
   console.log(`  ${cookie ? 'ok  ' : 'FAIL'} demo sign-in (${signIn.status})`);
   if (!cookie) throw new Error('Demo sign-in did not set a session');
-  const app = await fetch(`${base}/app`, { headers: { cookie }, redirect: 'manual' });
+  const app = await get(`${base}/app`, { headers: { cookie }, redirect: 'manual' });
   const where = app.headers.get('location') ?? '';
   console.log(`  ${where.includes('/app/manager/') ? 'ok  ' : 'FAIL'} coach lands on the team dashboard (${app.status} ${where})`);
   if (!where.includes('/app/manager/')) throw new Error('Signed-in coach did not land on the team dashboard');

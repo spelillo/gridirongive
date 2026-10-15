@@ -28,7 +28,7 @@ The public team is **Central High Varsity Football**, team code **KX7P2Q**. Card
 
 ### Hosted demo
 
-Every push to a branch other than `main` publishes the app with the sample data to a separate Vercel project, `gridirongive-demo` (the "Demo site" GitHub Actions job). It has no database or payment settings, so it can't reach the live Supabase or Stripe accounts, and the job refuses to deploy if one is ever added. Use it to click through a design on a phone before it ships. The live site deploys from `main` only.
+Every push to a branch other than `main` publishes the app with the sample data as a Vercel preview deployment (the "Demo site" GitHub Actions job), never to production. The build is made with `GG_FORCE_DEMO=1`, which makes it ignore every database, Supabase, Stripe and email setting, so it can't reach the live accounts. Use it to click through a design on a phone before it ships. The live site deploys from `main` only.
 
 ### Demo art
 

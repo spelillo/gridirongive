@@ -1,14 +1,17 @@
 name: Demo site
 
-# Publishes the app with sample teams, players and gifts to its own Vercel
-# project (gridirongive-demo), so a design can be clicked through on a phone
-# before it reaches the live site. The demo project has no database or
-# payment settings: the app runs on its embedded demo database and cannot
-# reach the real Supabase or Stripe accounts. scripts/demo-preview.mjs
-# refuses to deploy if any live setting is ever added to that project.
+# Publishes the app with sample teams, players and gifts as a Vercel preview
+# deployment, so a design can be clicked through on a phone before it reaches
+# the live site. It never deploys to production.
+#
+# The build is made with GG_FORCE_DEMO=1, which makes the app ignore every
+# database, Supabase, Stripe and email setting (src/lib/env.ts, baked in by
+# next.config.ts). It runs on its embedded demo database and cannot reach the
+# real accounts, even though the Vercel project has them.
 #
 # Runs on every push to a branch other than main, and from the Actions tab.
-# The demo address shows the latest such push.
+# The address is in the job summary, and at gridirongive-demo.vercel.app
+# when the token is allowed to set that alias.
 #
 # Repository secret: VERCEL_TOKEN (the same one the Go live job uses).
 
@@ -27,17 +30,24 @@ jobs:
     timeout-minutes: 20
     env:
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      DEMO_ALIAS: gridirongive-demo.vercel.app
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Find or create the demo project
+      - name: Find the project
         run: node scripts/demo-preview.mjs prepare
-      - name: Deploy
+      - name: Deploy a demo-only preview
         id: deploy
+        # No --prod: this is a preview deployment and never replaces the live site.
         run: |
-          url=$(npx --yes vercel@62.0.0 deploy --prod --yes --token "$VERCEL_TOKEN")
+          url=$(npx --yes vercel@62.0.0 deploy --yes --token "$VERCEL_TOKEN" --build-env GG_FORCE_DEMO=1 --env GG_FORCE_DEMO=1)
           echo "url=$url" >> "$GITHUB_OUTPUT"
       - name: Check the demo site
         run: node scripts/demo-preview.mjs check "${{ steps.deploy.outputs.url }}"
+      - name: Point the demo address at it
+        continue-on-error: true
+        run: |
+          npx --yes vercel@62.0.0 alias set "${{ steps.deploy.outputs.url }}" "$DEMO_ALIAS" --token "$VERCEL_TOKEN" --scope synth10
+          echo "Also at https://$DEMO_ALIAS" >> "$GITHUB_STEP_SUMMARY"

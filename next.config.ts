@@ -17,6 +17,8 @@ const nextConfig: NextConfig = {
     '/*': ['./supabase/migrations/**/*.sql', './db/**/*.sql'],
     '/media/**': ['./public/demo/**/*'],
   },
+  // Baked in at build time so a demo-only build stays demo-only (see src/lib/env.ts).
+  env: { GG_FORCE_DEMO: process.env.GG_FORCE_DEMO === '1' ? '1' : '' },
   poweredByHeader: false,
   async headers() {
     return [{ source: '/:path*', headers: securityHeaders }];

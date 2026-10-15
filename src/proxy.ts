@@ -8,7 +8,7 @@ import { createServerClient } from '@supabase/ssr';
 export async function proxy(request: NextRequest) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!process.env.DATABASE_URL || !url || !key) return NextResponse.next();
+  if (process.env.GG_FORCE_DEMO === '1' || !process.env.DATABASE_URL || !url || !key) return NextResponse.next();
   if (!request.cookies.getAll().some((c) => c.name.startsWith('sb-'))) return NextResponse.next();
 
   let response = NextResponse.next({ request });
