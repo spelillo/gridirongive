@@ -79,8 +79,10 @@ describe('profile nudges', () => {
 });
 
 describe('weekly summaries', () => {
+  // The coming Monday, or today when today is Monday. Notifications are stamped
+  // with the real clock, so the date must stay within the job's 6-day window.
   const nextMonday = () => {
-    const d = inDays(1);
+    const d = new Date();
     while (d.getUTCDay() !== 1) d.setTime(d.getTime() + DAY);
     return d;
   };

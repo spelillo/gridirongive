@@ -4,7 +4,7 @@ import { sys, dbErrorMessage } from '@/lib/db';
 import { requireAdmin, type SessionUser } from '@/lib/auth/session';
 import { notifyTeamStaff, notifyAthleteFamily, flushSoon } from '@/lib/notify';
 import { reverseDonation } from '@/lib/payments/process';
-import { stripe } from '@/lib/payments/stripe';
+import { stripe, stripeRefundParams } from '@/lib/payments/stripe';
 import { cleanUserText } from '@/lib/domain/text';
 import { athleteDisplayName } from '@/lib/domain/names';
 import { money, parseDollarsToCents } from '@/lib/domain/money';
@@ -155,8 +155,7 @@ export async function refundDonation(donationId: string, reason: string): Promis
     const viaStripe = mode.payments === 'stripe' && typeof d.payment_intent_id === 'string' && d.payment_intent_id.startsWith('pi_');
     if (viaStripe) {
       try {
-        await stripe().refunds.create(
-          { payment_intent: d.payment_intent_id, reason: 'requested_by_customer', metadata: { donation_id: d.id } },
+        await stripe().refunds.create(stripeRefundParams(d.payment_intent_id, d.id),
           { idempotencyKey: `refund_${d.id}` },
         );
       } catch (err) {

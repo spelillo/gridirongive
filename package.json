@@ -17,7 +17,8 @@
     "test:e2e": "playwright test",
     "db:reset-demo": "node scripts/reset-demo.mjs",
     "db:migrate": "node scripts/migrate.mjs",
-    "check": "npm run typecheck && npm run lint && npm run test"
+    "check": "npm run typecheck && npm run lint && npm run test",
+    "test:stripe": "vitest run --config vitest.stripe.config.mts"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.10",

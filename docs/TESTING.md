@@ -41,6 +41,16 @@ Playwright, Chromium, two projects: `desktop` (1280 x 900) and `mobile` (Pixel 7
 
 To run against a server you already have running (for example `npm run dev`), set `E2E_BASE_URL=http://localhost:3000`. Tests that change data (the gift, the consent) assume fresh demo data, so run `npm run db:reset-demo` first.
 
+## Stripe sandbox check (`tests/stripe`)
+
+Runs the real checkout, webhook and refund code against a Stripe sandbox, with an in-memory demo database so the live site is untouched. It creates a connected account with Stripe's test identity values, then checks a $37.50 gift at the item's price (amount, platform fee, transfer to the team), a gift above what an item still needs (refused before Stripe is called), a declined card, and a full refund that takes the money back from the team. It refuses live keys.
+
+```sh
+STRIPE_SECRET_KEY=sk_test_... NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_... npm run test:stripe
+```
+
+Or run Actions > Stripe sandbox check, which reads the repository secrets `STRIPE_SECRET_KEY` and `STRIPE_PUBLISHABLE_KEY`. Connect must be turned on in the sandbox first.
+
 ## Testing payments by hand
 
 - Demo mode: card `4242 4242 4242 4242` succeeds and `4000 0000 0000 0002` is declined. Both go through the same processing code as real Stripe events.
