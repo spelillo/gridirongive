@@ -1,0 +1,26 @@
+name: Stripe sandbox check
+
+# Runs the real checkout, webhook and refund code against your Stripe
+# sandbox with test cards (tests/stripe). Uses an in-memory demo database,
+# so the live site is not touched. Needs the repository secrets
+# STRIPE_SECRET_KEY (sk_test_...) and STRIPE_PUBLISHABLE_KEY (pk_test_...),
+# and Connect turned on in the sandbox. It refuses live keys.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  stripe-sandbox:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run test:stripe
+        env:
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${{ secrets.STRIPE_PUBLISHABLE_KEY }}

@@ -14,6 +14,16 @@ export function isTestKey(): boolean {
   return Boolean(env.stripeSecretKey?.startsWith('sk_test_') || env.stripeSecretKey?.startsWith('rk_test_'));
 }
 
+/**
+ * A full refund of a destination charge. reverse_transfer takes the gift back
+ * from the team's connected account; without it the platform would pay the
+ * whole refund while the team kept the money. The platform fee is returned to
+ * the donor as part of the refund; Stripe keeps its own processing fee.
+ */
+export function stripeRefundParams(paymentIntentId: string, donationId: string): Stripe.RefundCreateParams {
+  return { payment_intent: paymentIntentId, reason: 'requested_by_customer', reverse_transfer: true, metadata: { donation_id: donationId } };
+}
+
 /** Maps a Connect account to our payouts status. */
 export function accountStatus(acct: Stripe.Account): 'pending' | 'connected' | 'restricted' {
   if (acct.charges_enabled && acct.payouts_enabled) return 'connected';
