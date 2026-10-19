@@ -23,13 +23,13 @@ export function AccountMenu({ user }: { user: { email: string; name: string | nu
   const item = 'flex min-h-11 items-center px-4 text-[15px] text-ink-list no-underline hover:bg-band-blue hover:text-ink';
   return (
     <div ref={ref} className="relative">
-      <button type="button" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((o) => !o)} className="flex min-h-11 items-center gap-2 rounded-md px-1 text-ink-nav hover:bg-band">
+      <button type="button" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((o) => !o)} className="flex min-h-11 items-center gap-2 rounded-full py-1 pl-1 pr-2 text-ink-nav hover:bg-band">
         <Avatar name={user.name || user.email} size={32} />
         <span className="sr-only">Account menu for {user.email}</span>
         <ChevronDown size={16} aria-hidden />
       </button>
       {open && (
-        <div role="menu" className="absolute right-0 top-full z-50 mt-1 w-64 overflow-hidden rounded-md border border-hairline-soft bg-canvas py-1 shadow-pop">
+        <div role="menu" className="absolute right-0 top-full z-50 mt-2 w-64 overflow-hidden rounded-[12px] border border-hairline-soft bg-canvas py-1 shadow-pop">
           <p className="truncate px-4 py-2 text-[13px] text-ink-meta">{user.email}</p>
           <Link role="menuitem" href="/app" className={item} onClick={() => setOpen(false)}>My dashboard</Link>
           <Link role="menuitem" href="/app/notifications" className={item} onClick={() => setOpen(false)}>Notifications</Link>

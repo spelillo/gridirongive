@@ -5,9 +5,12 @@ import { GearPhoto, type PhotoNeed } from './GearPhoto';
 import { GearCard, type CardNeed } from './GearCard';
 import { useGive } from '@/components/give/GiveProvider';
 import { Breadcrumb } from '@/components/ui/Breadcrumb';
+import { Avatar } from '@/components/ui/Avatar';
 import { Meter } from '@/components/ui/Meter';
 import { Button } from '@/components/ui/Button';
 import { Chip } from '@/components/ui/Chip';
+import { TeamCrest } from '@/components/public/TeamCrest';
+import { teamVars } from '@/config/team-colors';
 import { ClampText } from '@/components/public/Collapsible';
 import { money, moneyWhole, moneyWholeUp } from '@/lib/domain/money';
 import { relativeTime } from '@/lib/domain/text';
@@ -27,7 +30,7 @@ export interface AthleteViewData {
   remainingCents: number;
   itemsTotal: number;
   itemsFunded: number;
-  team: { name: string; slug: string };
+  team: { name: string; slug: string; color?: string | null; crest?: string };
   needs: (CardNeed & { pinX: number | null; pinY: number | null })[];
   supporters: { id: string; name: string; message: string | null; createdAt: string }[];
   supportersTotal: number;
@@ -67,42 +70,55 @@ export function AthleteView({ data }: { data: AthleteViewData }) {
   const shown = allSupporters ? data.supporters : data.supporters.slice(0, 10);
 
   const totals = (
-    <div className="flex flex-col gap-2">
-      <p className="t-figure">
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-1">
         {fullyFunded ? (
-          <span className="text-funded">Fully funded</span>
+          <p className="t-score text-[40px] text-funded">Fully funded</p>
         ) : (
-          <>
-            {moneyWhole(data.raisedCents)} <span className="font-normal text-ink-meta">of {moneyWholeUp(data.goalCents)}</span>
-          </>
+          <p className="flex items-baseline gap-2">
+            <span className="t-score text-[40px] text-ink md:text-[44px]">{moneyWhole(data.raisedCents)}</span>
+            <span className="text-[15px] text-ink-meta">of {moneyWholeUp(data.goalCents)}</span>
+          </p>
         )}
-      </p>
-      <Meter raised={data.raisedCents} goal={data.goalCents} showText={false} label={`${data.first}'s gear: ${moneyWhole(data.raisedCents)} of ${moneyWholeUp(data.goalCents)}`} />
-      <p className="t-caption tabular">
-        {data.itemsFunded} of {data.itemsTotal} items funded
-      </p>
+        <p className="t-caption tabular">
+          {data.itemsFunded} of {data.itemsTotal} items funded
+        </p>
+      </div>
+      <Meter raised={data.raisedCents} goal={data.goalCents} showText={false} thick label={`${data.first}'s gear: ${moneyWhole(data.raisedCents)} of ${moneyWholeUp(data.goalCents)}`} />
+    </div>
+  );
+
+  const heading = (
+    <div className="flex items-start gap-4">
+      {data.jersey && (
+        <span aria-hidden className="t-score flex h-[60px] min-w-[60px] items-center justify-center rounded-[14px] bg-[var(--team,#1747d1)] px-2 text-[36px] text-white md:h-[68px] md:min-w-[68px] md:text-[40px]">
+          {data.jersey}
+        </span>
+      )}
+      <div className="flex min-w-0 flex-col gap-1">
+        <h1 className="t-hero">{data.displayName}</h1>
+        <p className="text-[15px] text-ink-meta md:text-[16px]">{data.meta}</p>
+        <Link href={`/t/${data.team.slug}`} className="inline-flex items-center gap-2 text-[15px] font-semibold text-ink no-underline hover:text-[var(--team,#1747d1)] hover:underline">
+          <TeamCrest name={data.team.crest ?? data.team.name} color={data.team.color} size={20} className="drop-shadow-none" />
+          {data.team.name}
+        </Link>
+      </div>
     </div>
   );
 
   return (
-    <>
-      <div className="page-x mx-auto w-full max-w-[1200px] py-4 pb-32 md:py-8 lg:pb-12">
-        <div className="mb-4 hidden lg:block">
-          <Breadcrumb items={[{ label: data.team.name, href: `/t/${data.team.slug}` }, { label: 'Players', href: `/t/${data.team.slug}#players-h` }, { label: data.displayName }]} />
+    <div style={teamVars(data.team.color) as React.CSSProperties}>
+      <div className="page-x mx-auto w-full max-w-[1200px] py-4 pb-32 md:py-8 lg:pb-14">
+        <div className="mb-5">
+          <Breadcrumb items={[{ label: data.team.name, href: `/t/${data.team.slug}` }, { label: 'Players', href: `/t/${data.team.slug}#players` }, { label: data.displayName }]} />
         </div>
-        <div className={data.photoSrc ? 'grid gap-6 lg:grid-cols-12 lg:gap-10' : 'flex flex-col gap-6'}>
+        <div className={data.photoSrc ? 'grid gap-6 lg:grid-cols-12 lg:gap-12' : 'flex flex-col gap-6'}>
           {/* Mobile header */}
-          <header className="flex flex-col gap-1 lg:hidden">
-            <h1 className="t-hero">{data.displayName}</h1>
-            <p className="t-caption text-[15px]">{data.meta}</p>
-            <Link href={`/t/${data.team.slug}`} className="text-[15px]">
-              {data.team.name}
-            </Link>
-          </header>
+          <header className="lg:hidden">{heading}</header>
 
           {data.photoSrc && (
-            <div className="lg:col-span-7">
-              <div className="lg:sticky lg:top-[84px]">
+            <div className="lg:col-span-5">
+              <div className="lg:sticky lg:top-[88px]">
                 <GearPhoto
                   src={data.photoSrc}
                   alt={data.photoAlt}
@@ -119,33 +135,21 @@ export function AthleteView({ data }: { data: AthleteViewData }) {
             </div>
           )}
 
-          <div className={data.photoSrc ? 'flex flex-col gap-6 lg:col-span-5' : 'flex flex-col gap-6'}>
-            <header className="hidden flex-col gap-1 lg:flex">
-              <h1 className="t-hero">{data.displayName}</h1>
-              <p className="t-body">{data.meta}</p>
-              <Link href={`/t/${data.team.slug}`} className="text-[16px]">
-                {data.team.name}
-              </Link>
-            </header>
-            {!data.photoSrc && (
-              <div className="w-40 lg:hidden">
-                <span className="flex aspect-[3/4] items-center justify-center rounded-lg bg-band text-[40px] font-medium text-ink-list tabular" aria-hidden>
-                  {data.jersey ? `#${data.jersey}` : ''}
-                </span>
-              </div>
-            )}
+          <div className={data.photoSrc ? 'flex flex-col gap-8 lg:col-span-7' : 'flex flex-col gap-8'}>
+            <header className="hidden lg:block">{heading}</header>
 
-            {totals}
-
-            {canGive && !fullyFunded && (
-              <div className="hidden flex-col gap-3 sm:flex-row lg:flex">
-                <Button onClick={fundRest}>Fund the rest ({money(data.remainingCents).replace(/\.00$/, '')})</Button>
-                <Button variant="secondary" onClick={giveAny}>
-                  Give any amount
-                </Button>
-              </div>
-            )}
-            {!config.team.acceptsGifts && !data.preview && <p className="t-caption">This team can&apos;t accept gifts right now.</p>}
+            <div className="card flex flex-col gap-5 p-5">
+              {totals}
+              {canGive && !fullyFunded && (
+                <div className="hidden gap-3 lg:flex">
+                  <Button onClick={fundRest}>Fund the rest ({money(data.remainingCents).replace(/\.00$/, '')})</Button>
+                  <Button variant="secondary" onClick={giveAny}>
+                    Give any amount
+                  </Button>
+                </div>
+              )}
+              {!config.team.acceptsGifts && !data.preview && <p className="t-caption">This team can&apos;t accept gifts right now.</p>}
+            </div>
 
             <section aria-labelledby="gear-h" className="flex flex-col gap-3">
               <h2 id="gear-h" className="t-subhead">
@@ -190,14 +194,17 @@ export function AthleteView({ data }: { data: AthleteViewData }) {
               {data.supporters.length === 0 ? (
                 <p className="t-body">No supporters yet. Be the first.</p>
               ) : (
-                <ul className="flex flex-col divide-y divide-hairline-soft">
+                <ul className="card flex flex-col divide-y divide-hairline-soft px-4">
                   {shown.map((s) => (
-                    <li key={s.id} className="flex flex-col gap-1 py-3">
-                      <div className="flex items-baseline justify-between gap-3">
-                        <span className="text-[15px] font-medium text-ink">{s.name}</span>
-                        <span className="t-caption whitespace-nowrap">{relativeTime(s.createdAt)}</span>
+                    <li key={s.id} className="flex gap-3 py-3.5">
+                      <Avatar name={s.name} size={36} className="bg-[var(--team-soft,#ebf1ff)] text-[var(--team,#1747d1)]" />
+                      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                        <div className="flex items-baseline justify-between gap-3">
+                          <span className="text-[15px] font-semibold text-ink">{s.name}</span>
+                          <span className="t-caption whitespace-nowrap">{relativeTime(s.createdAt)}</span>
+                        </div>
+                        {s.message && <p className="text-[15px] leading-[22px] text-ink-body">{s.message}</p>}
                       </div>
-                      {s.message && <p className="text-[15px] leading-[22px] text-ink-body">{s.message}</p>}
                     </li>
                   ))}
                 </ul>
@@ -219,7 +226,7 @@ export function AthleteView({ data }: { data: AthleteViewData }) {
 
       {/* Sticky action bar on phones and tablets */}
       {!isOpen && !data.preview && config.team.acceptsGifts && (
-        <div className="no-print fixed inset-x-0 bottom-0 z-30 border-t border-hairline-soft bg-canvas px-4 pb-[max(12px,env(safe-area-inset-bottom))] pt-3 lg:hidden">
+        <div className="no-print fixed inset-x-0 bottom-0 z-30 border-t border-hairline-soft bg-canvas/95 px-4 pb-[max(12px,env(safe-area-inset-bottom))] pt-3 shadow-[0_-8px_24px_rgba(7,15,36,0.08)] backdrop-blur lg:hidden">
           {fullyFunded ? (
             <div className="flex items-center justify-between gap-3">
               <Chip tone="funded" icon="check">Fully funded. Thank you!</Chip>
@@ -239,6 +246,6 @@ export function AthleteView({ data }: { data: AthleteViewData }) {
           )}
         </div>
       )}
-    </>
+    </div>
   );
 }

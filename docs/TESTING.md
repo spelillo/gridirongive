@@ -31,7 +31,7 @@ Running against real Postgres matters: it caught a difference in how the live dr
 
 ## Browser tests (`tests/e2e`)
 
-Playwright, Chromium, two projects: `desktop` (1280 x 900) and `mobile` (Pixel 7). `npm run test:e2e` builds the app, starts it in demo mode on port 3200 with its own database in `.data/e2e-pglite` (wiped before each run), and runs:
+Playwright, Chromium, two projects: `desktop` (1280 x 900) and `mobile` (Pixel 7). `npm run test:e2e` builds the app, starts it in demo mode on port 3200 with its own database in `.data/e2e-pglite` (the server command wipes it before starting; deleting it from Playwright's global setup removed files under an already running server), and runs:
 
 - **public**: team search never finds players, the roster stays locked until the right code, a player page without the code shows nothing, a gift from item to receipt (including the fee total and that the receipt makes no tax claim), and a declined card.
 - **family**: a guardian opens the invite, signs in with the emailed code from the outbox, and gives consent.

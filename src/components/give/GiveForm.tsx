@@ -9,7 +9,7 @@ import { Checkbox } from '@/components/ui/Field';
 import { cn } from '@/components/ui/cn';
 import { money, moneyWhole, quoteGift, parseDollarsToCents } from '@/lib/domain/money';
 import { track } from '@/lib/analytics-client';
-import { GearIcon } from './GearIcon';
+import { GearArt } from '@/components/gear/GearArt';
 import { SimulatedPay, type PayHandle } from './SimulatedPay';
 import { needLeft, type GiveConfig, type GiveNeed, type GiveTarget } from './types';
 
@@ -202,7 +202,7 @@ export function GiveForm({
   return (
     <form id={`${uid}-form`} onSubmit={submit} noValidate className="flex flex-col gap-6">
       {(errorList.length > 0 || payError) && (
-        <div ref={summaryRef} tabIndex={-1} role="alert" className="rounded-md bg-error-bg px-4 py-3 outline-none">
+        <div ref={summaryRef} tabIndex={-1} role="alert" className="rounded-[12px] bg-error-bg px-4 py-3 outline-none">
           {payError ? (
             <p className="text-[15px] text-ink-body">{payError}</p>
           ) : (
@@ -241,10 +241,10 @@ export function GiveForm({
         {target.kind === 'fund_rest' && (
           <div className="flex flex-col gap-2">
             <p className="t-label">Everything left on {athleteName}&apos;s list</p>
-            <ul className="divide-y divide-hairline-soft rounded-md border border-hairline-soft">
+            <ul className="divide-y divide-hairline-soft rounded-[12px] border border-hairline-soft">
               {restNeeds.map((n) => (
                 <li key={n.id} className="flex items-center gap-3 py-1 pl-3 pr-1">
-                  <GearIcon name={n.name} category={n.category} size={20} className="shrink-0 text-ink-nav" />
+                  <GearArt name={n.name} category={n.category} size={22} tile={false} />
                   <span className="min-w-0 flex-1 truncate text-[15px] text-ink-list">{n.name}</span>
                   <span className="tabular text-[15px] text-ink">{money(needLeft(n))}</span>
                   <button
@@ -267,9 +267,7 @@ export function GiveForm({
         )}
         {target.kind === 'athlete' && (
           <div className="flex items-start gap-3">
-            <span className="flex size-12 shrink-0 items-center justify-center rounded-md bg-band">
-              <GearIcon category="team_fund" className="text-ink-list" />
-            </span>
+            <GearArt name="Team fund" category="team_fund" size={56} />
             <div>
               <p className="t-label text-[16px]">Any amount for {athleteName}</p>
               <p className="t-caption">Spread across {recipientFirst}&apos;s open items, smallest first. {moneyWhole(maxCents)} left in total.</p>
@@ -278,9 +276,7 @@ export function GiveForm({
         )}
         {target.kind === 'team_fund' && (
           <div className="flex items-start gap-3">
-            <span className="flex size-12 shrink-0 items-center justify-center rounded-md bg-band">
-              <GearIcon category="team_fund" className="text-ink-list" />
-            </span>
+            <GearArt name="Team fund" category="team_fund" size={56} />
             <div>
               <p className="t-label text-[16px]">Team fund for {config.team.name}</p>
               <p className="t-caption">Helps where it&apos;s needed most. The coach spends it on team gear and items players still need.</p>
@@ -307,8 +303,8 @@ export function GiveForm({
                   track('give_amount_selected', { chip: c.id });
                 }}
                 className={cn(
-                  'min-h-11 rounded-md border px-4 text-[16px] tabular',
-                  activeChip === c.id ? 'border-primary bg-band-blue font-medium text-primary-deep' : 'border-hairline text-ink-body hover:border-primary',
+                  'min-h-11 rounded-full border px-4 text-[15px] font-semibold tabular transition-colors duration-150',
+                  activeChip === c.id ? 'border-ink bg-ink text-white' : 'border-[#cfd6e1] bg-canvas text-ink hover:border-ink',
                 )}
               >
                 {c.label}
@@ -334,7 +330,7 @@ export function GiveForm({
                   onBlur={() => setTouched((t) => ({ ...t, amount: true }))}
                   aria-invalid={Boolean(show('amount')) || undefined}
                   aria-describedby={`${uid}-other-help`}
-                  className="h-11 w-full rounded-md border border-hairline pl-7 pr-3 text-[16px] tabular text-ink aria-[invalid=true]:border-error"
+                  className="h-11 w-full rounded-[10px] border border-hairline pl-7 pr-3 text-[16px] tabular text-ink focus:border-primary focus:shadow-[0_0_0_4px_rgba(23,71,209,0.22)] focus:outline-none aria-[invalid=true]:border-error"
                 />
               </div>
               <p id={`${uid}-other-help`} className="t-caption">
@@ -343,7 +339,7 @@ export function GiveForm({
             </div>
           )}
           {overMax && (
-            <div className="flex flex-col gap-1 rounded-md bg-band-blue px-4 py-3">
+            <div className="flex flex-col gap-1 rounded-[12px] bg-band-blue px-4 py-3">
               <p className="text-[15px] text-ink-body">
                 This {target.kind === 'need' ? 'item' : 'player'} only needs {moneyWhole(maxCents)}. Anything extra can go to the team fund.
               </p>
@@ -375,7 +371,7 @@ export function GiveForm({
             onBlur={() => setTouched((t) => ({ ...t, email: true }))}
             aria-invalid={Boolean(show('email')) || undefined}
             aria-describedby={show('email') ? `${uid}-email-err` : undefined}
-            className="h-11 rounded-md border border-hairline px-3 text-[16px] text-ink aria-[invalid=true]:border-error"
+            className="h-11 rounded-[10px] border border-hairline px-3.5 text-[16px] text-ink focus:border-primary focus:shadow-[0_0_0_4px_rgba(23,71,209,0.22)] focus:outline-none aria-[invalid=true]:border-error"
           />
           {show('email') && <p id={`${uid}-email-err`} className="text-[14px] text-error">{errors.email}</p>}
         </div>
@@ -392,7 +388,7 @@ export function GiveForm({
             onBlur={() => setTouched((t) => ({ ...t, name: true }))}
             aria-invalid={Boolean(show('name')) || undefined}
             aria-describedby={show('name') ? `${uid}-name-err` : undefined}
-            className="h-11 rounded-md border border-hairline px-3 text-[16px] text-ink aria-[invalid=true]:border-error"
+            className="h-11 rounded-[10px] border border-hairline px-3.5 text-[16px] text-ink focus:border-primary focus:shadow-[0_0_0_4px_rgba(23,71,209,0.22)] focus:outline-none aria-[invalid=true]:border-error"
           />
           {show('name') && <p id={`${uid}-name-err`} className="text-[14px] text-error">{errors.name}</p>}
           <Checkbox
@@ -419,7 +415,7 @@ export function GiveForm({
             rows={3}
             onChange={(e) => setMessage(e.target.value)}
             aria-describedby={`${uid}-msg-help`}
-            className="rounded-md border border-hairline px-3 py-2 text-[16px] text-ink"
+            className="rounded-[10px] border border-hairline px-3.5 py-2 text-[16px] text-ink focus:border-primary focus:shadow-[0_0_0_4px_rgba(23,71,209,0.22)] focus:outline-none"
           />
           <p id={`${uid}-msg-help`} className="t-caption">
             {config.team.requireMessageApproval ? `Messages are reviewed before ${athleteName ? recipientFirst : 'anyone'} sees them.` : 'Messages with links or contact details are reviewed first.'}
@@ -429,7 +425,7 @@ export function GiveForm({
 
       {/* 4. Total and pay */}
       <section aria-label="Total and payment" className="flex flex-col gap-4">
-        <dl className="flex flex-col gap-2 rounded-md bg-chrome px-4 py-3 text-[15px]">
+        <dl className="flex flex-col gap-2 rounded-[12px] bg-chrome px-4 py-3 text-[15px]">
           <div className="flex justify-between">
             <dt className="text-ink-body">Gift</dt>
             <dd className="tabular text-ink">{money(amount)}</dd>
@@ -481,7 +477,7 @@ export function GiveForm({
           <SimulatedPay ref={payRef} />
         )}
 
-        <div className={cn('flex flex-col-reverse gap-3 sm:flex-row sm:justify-end', !standalone && 'sticky bottom-0 -mx-6 bg-canvas px-6 pb-1 pt-2')}>
+        <div className={cn('flex flex-col-reverse gap-3 sm:flex-row sm:justify-end', !standalone && 'sticky -bottom-5 -mx-6 -mb-5 border-t border-hairline-soft bg-canvas px-6 pb-5 pt-3')}>
           {onClose && (
             <Button variant="secondary" onClick={onClose} disabled={phase === 'processing'}>
               Cancel
@@ -503,9 +499,7 @@ function NeedSummary({ need, teamName }: { need: GiveNeed; teamName: string }) {
   const left = needLeft(need);
   return (
     <div className="flex items-start gap-3">
-      <span className="flex size-12 shrink-0 items-center justify-center rounded-md bg-band">
-        <GearIcon name={need.name} category={need.category} className="text-ink-list" />
-      </span>
+      <GearArt name={need.name} category={need.category} size={56} />
       <div className="min-w-0">
         <p className="t-label text-[16px]">
           {need.name} for {need.athleteName ?? teamName}

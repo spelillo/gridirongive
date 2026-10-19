@@ -39,18 +39,35 @@ function rng(seed: number) {
   };
 }
 
+// Gear markers, as fractions of the player illustrations drawn by
+// scripts/demo-art.mjs (helmet held at the right hip, gloved left hand).
 const PINS: Record<string, [number, number]> = {
-  Helmet: [0.5, 0.1],
-  Mouthguard: [0.57, 0.19],
-  'Shoulder Pads': [0.7, 0.27],
-  'Rib Protector': [0.4, 0.36],
-  'Practice Jersey': [0.5, 0.47],
-  Gloves: [0.22, 0.55],
-  'Lineman Gloves': [0.22, 0.55],
-  Girdle: [0.39, 0.57],
-  'Integrated Padded Pants': [0.6, 0.62],
-  Cleats: [0.38, 0.9],
-  'Kicking Cleats': [0.38, 0.9],
+  Helmet: [0.71, 0.5],
+  Mouthguard: [0.81, 0.56],
+  'Chin Strap': [0.81, 0.56],
+  'Shoulder Pads': [0.36, 0.33],
+  'Rib Protector': [0.41, 0.45],
+  'Practice Jersey': [0.57, 0.48],
+  'Game Jersey': [0.57, 0.48],
+  Gloves: [0.33, 0.56],
+  'Lineman Gloves': [0.33, 0.56],
+  Girdle: [0.44, 0.575],
+  'Integrated Padded Pants': [0.57, 0.65],
+  Cleats: [0.44, 0.9],
+  'Kicking Cleats': [0.44, 0.9],
+};
+
+// Team colors and the illustrated covers in public/demo/teams.
+const TEAM_COLORS: Record<string, string> = {
+  'central-high-football': '#4c1d95',
+  'westview-lacrosse': '#0f766e',
+  'farragut-football': '#1e3a8a',
+  'maryville-youth-football': '#b91c1c',
+  'bearden-jv-football': '#1d4ed8',
+  'lincoln-football': '#9f1239',
+  'riverside-hockey': '#18181b',
+  'eastside-baseball': '#166534',
+  'hillcrest-football': '#0e7490',
 };
 
 const DONORS = [
@@ -95,12 +112,13 @@ export async function seedDemo(db: Driver) {
       [o.org, o.city, o.state, o.domain ? `https://www.${o.domain}` : null, o.domain ?? null]);
     const team = await one(
       `insert into teams (org_id, slug, name, sport, level, mascot, city, state, zip, about, status, verification_status, verification_method,
-         verified_at, code_hash, payouts_status, stripe_account_id, created_by, published_at, last_activity_at)
-       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19, now() - make_interval(days => $20)) returning id`,
+         verified_at, code_hash, payouts_status, stripe_account_id, created_by, published_at, last_activity_at, color, photo_path)
+       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19, now() - make_interval(days => $20), $21, $22) returning id`,
       [org.id, o.slug, o.name, o.sport, o.level, o.mascot, o.city, o.state, o.zip, o.about, o.status,
         o.verified ? 'verified' : 'unverified', o.verified ? 'domain' : null, o.verified ? new Date(Date.now() - 40 * 86400000) : null,
         codeHash(o.code), o.connected ? 'connected' : 'not_connected', o.connected ? `acct_demo_${o.slug.replace(/-/g, '_')}` : null,
-        users[o.coach] ?? null, o.status === 'live' ? new Date(Date.now() - 35 * 86400000) : null, o.activityDaysAgo],
+        users[o.coach] ?? null, o.status === 'live' ? new Date(Date.now() - 35 * 86400000) : null, o.activityDaysAgo,
+        TEAM_COLORS[o.slug] ?? null, o.status === 'live' ? `demo/teams/${o.slug}.svg` : null],
     );
     await q(`insert into team_secrets (team_id, code) values ($1, $2)`, [team.id, o.code]);
     const season = await one(`insert into seasons (team_id, label, starts_on, ends_on, status) values ($1, $2, '2026-08-01', '2026-12-15', 'active') returning id`, [team.id, o.season]);
@@ -117,24 +135,25 @@ export async function seedDemo(db: Driver) {
     const fund = await one(`insert into needs (team_id, season_id, kind, name, sort) values ($1, $2, 'team_fund', 'Team fund', 0) returning id`, [team.id, season.id]);
     if (users[o.coach]) await q(`insert into team_members (team_id, user_id, email, role, title, status) values ($1, $2, $3, 'coach', 'Head coach', 'active')`, [team.id, users[o.coach], o.coach]);
     await q(`insert into share_links (token, team_id, visits) values ($1, $2, $3)`, [`T${o.slug.replace(/-/g, '').slice(0, 10)}${o.code.toLowerCase()}`, team.id, Math.floor(r() * 300)]);
-    return { id: team.id as string, seasonId: season.id as string, fundId: fund.id as string };
+    return { id: team.id as string, slug: o.slug, seasonId: season.id as string, fundId: fund.id as string };
   }
 
-  async function addAthlete(team: { id: string; seasonId: string }, sport: string, p: {
-    first: string; last: string; jersey: string; position: string; grade: number; status: string; photo?: boolean; bio?: string;
+  async function addAthlete(team: { id: string; slug: string; seasonId: string }, sport: string, p: {
+    first: string; last: string; jersey: string; position: string; grade: number; status: string; bio?: string;
     guardianEmail?: string; athleteEmail?: string; invite?: string; consentDaysAgo?: number; preferred?: string;
   }) {
     const slug = athleteSlug(p.first, p.last, p.jersey);
     const live = p.status === 'live';
     const consented = !['needs_consent'].includes(p.status);
     const bio = p.bio ?? (consented ? `I play ${p.position} and I've been playing since middle school. New gear would let me practice every day without borrowing from teammates.` : '');
-    const photo = p.photo ? 'demo/player-home.svg' : null;
+    // Illustrations stand in for player photos: every demo player is a fictional minor.
+    const photo = consented ? `demo/players/${team.slug}--${slug}.svg` : null;
     const a = await one(
       `insert into athletes (team_id, first_name, last_name, preferred_name, jersey, position, position_group, grade, slug, status, bio, photo_path,
          photo_alt, pub_preferred_name, pub_bio, pub_photo_path, published_at, share_token, invite_status, invite_sent_at, invite_accepted_at, consent_at, submitted_at, setup_step)
        values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24) returning id`,
       [team.id, p.first, p.last, p.preferred ?? null, p.jersey, p.position, positionGroup(p.position), p.grade, slug, p.status, bio, photo,
-        photo ? 'Illustration standing in for a player photo' : null,
+        photo ? `Illustration of #${p.jersey} in uniform` : null,
         live ? p.preferred ?? null : null, live ? bio : null, live ? photo : null, live ? new Date(Date.now() - 30 * 86400000) : null,
         `${slug.replace(/-/g, '')}${Math.floor(r() * 1e6).toString(36)}`.slice(0, 22),
         p.invite ?? (consented ? 'accepted' : 'not_sent'),
@@ -152,7 +171,7 @@ export async function seedDemo(db: Driver) {
     for (const it of itemsFor(tpl.id)) {
       i += 1;
       const size = it.sizes?.length ? it.sizes[Math.min(it.sizes.length - 1, 1 + Math.floor(r() * 2))] : null;
-      const pin = p.photo ? PINS[it.name] : undefined;
+      const pin = photo ? PINS[it.name] : undefined;
       const n = await one(
         `insert into needs (team_id, season_id, athlete_id, kind, catalog_id, name, variant, price_cents, sort, pin_x, pin_y)
          values ($1, $2, $3, 'athlete', $4, $5, $6, $7, $8, $9, $10) returning id`,
@@ -232,7 +251,6 @@ export async function seedDemo(db: Driver) {
     const status = statuses[i];
     const a = await addAthlete(central, 'football', {
       first, last, jersey, position, grade, status,
-      photo: i === 0 || i === 3 || i === 6 || i === 14,
       bio: i === 0
         ? "I've played quarterback since seventh grade. My helmet is a hand-me-down that's two years past its recertification date, so a new one is first on my list. I want to play in college and study engineering."
         : undefined,

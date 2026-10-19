@@ -2,5 +2,5 @@
 import { SearchField } from './SearchField';
 
 export function NavSearch() {
-  return <SearchField size="md" />;
+  return <SearchField size="md" variant="nav" />;
 }

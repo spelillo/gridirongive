@@ -16,12 +16,12 @@ export function Tabs({ tabs, active, label }: { tabs: { id: string; label: strin
                 scroll={false}
                 className={cn(
                   'flex items-center gap-2 border-b-2 no-underline',
-                  on ? 'h-11 border-primary text-[18px] font-medium text-primary md:text-[20px]' : 'h-11 border-transparent text-[14px] text-ink-nav hover:text-primary',
+                  on ? 'h-11 border-primary text-[15px] font-semibold text-ink' : 'h-11 border-transparent text-[15px] font-medium text-ink-meta hover:text-ink',
                 )}
               >
                 {t.label}
                 {t.count !== undefined && t.count > 0 && (
-                  <span className="rounded-md bg-band px-1.5 text-[12px] leading-5 font-medium text-ink tabular">{t.count}</span>
+                  <span className="rounded-full bg-band px-2 text-[12px] leading-5 font-semibold text-ink tabular">{t.count}</span>
                 )}
               </Link>
             </li>

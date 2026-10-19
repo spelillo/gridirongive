@@ -126,18 +126,18 @@ export function GearPhoto({
         )}
         <div ref={box} className="relative mx-auto aspect-[3/4] max-h-[60vh] overflow-visible md:max-h-[80vh]">
           {src ? (
-            <img src={src} alt={alt} width={900} height={1200} className="size-full rounded-lg bg-band object-cover" fetchPriority="high" />
+            <img src={src} alt={alt} width={900} height={1200} className="size-full rounded-[20px] bg-band object-cover shadow-card" fetchPriority="high" />
           ) : (
-            <PhotoPlaceholder jersey={jersey} large className="size-full rounded-lg" />
+            <PhotoPlaceholder jersey={jersey} large className="size-full rounded-[20px]" />
           )}
           {src && show && size.w > 0 && (
             <>
               <svg aria-hidden className="pointer-events-none absolute inset-0" width={size.w} height={size.h}>
                 {laid.filter((p) => p.moved).map((p) => (
-                  <line key={p.id} x1={p.tx} y1={p.ty} x2={p.px} y2={p.py} stroke="#475e75" strokeWidth={1} />
+                  <line key={p.id} x1={p.tx} y1={p.ty} x2={p.px} y2={p.py} stroke="#ffffff" strokeOpacity={0.8} strokeWidth={1.5} />
                 ))}
                 {laid.filter((p) => p.moved).map((p) => (
-                  <circle key={`${p.id}-dot`} cx={p.tx} cy={p.ty} r={3} fill="#475e75" />
+                  <circle key={`${p.id}-dot`} cx={p.tx} cy={p.ty} r={3.5} fill="#ffffff" />
                 ))}
               </svg>
               {laid.map((p, idx) => {
@@ -165,11 +165,11 @@ export function GearPhoto({
                   >
                     <span
                       className={cn(
-                        'flex size-8 items-center justify-center rounded-full text-[14px] font-medium tabular transition-[box-shadow] duration-150',
+                        'flex size-8 items-center justify-center rounded-full text-[14px] font-bold tabular shadow-[0_2px_8px_rgba(0,0,0,0.35)] transition-[box-shadow,transform] duration-150 group-hover:scale-110',
                         st === 'open' && 'bg-canvas text-primary ring-2 ring-primary',
                         st === 'funded' && 'bg-funded text-white ring-2 ring-white',
                         st === 'done' && 'bg-ink text-white ring-2 ring-white',
-                        isSel && (st === 'open' ? 'ring-[3px] shadow-[0_0_0_7px_#fff]' : 'shadow-[0_0_0_4px_#0057d2]'),
+                        isSel && (st === 'open' ? 'scale-110 ring-[3px] shadow-[0_0_0_7px_rgba(255,255,255,0.55)]' : 'scale-110 shadow-[0_0_0_4px_#1747d1]'),
                       )}
                     >
                       {st === 'open' ? n.number : <Check size={16} strokeWidth={3} aria-hidden />}
@@ -177,7 +177,7 @@ export function GearPhoto({
                     {desktop && popover !== p.id && (
                       <span
                         role="tooltip"
-                        className="pointer-events-none absolute left-1/2 top-full z-20 mt-1 hidden -translate-x-1/2 whitespace-nowrap rounded-md bg-ink px-2 py-1 text-[13px] text-white group-hover:block group-focus-visible:block"
+                        className="pointer-events-none absolute left-1/2 top-full z-20 mt-1 hidden -translate-x-1/2 whitespace-nowrap rounded-[8px] bg-ink px-2.5 py-1 text-[13px] font-medium text-white group-hover:block group-focus-visible:block"
                       >
                         {n.name}
                         {st === 'open' ? `, ${moneyWhole(left)} left` : ''}
@@ -191,7 +191,7 @@ export function GearPhoto({
                   ref={popRef}
                   role="dialog"
                   aria-label={popNeed.name}
-                  className="absolute z-30 w-[280px] rounded-md border border-hairline-soft bg-canvas p-4 shadow-pop"
+                  className="absolute z-30 w-[280px] rounded-[14px] border border-hairline-soft bg-canvas p-4 shadow-pop"
                   style={{
                     left: Math.min(Math.max(pop.px - 140, 0), Math.max(size.w - 280, 0)),
                     top: pop.py > size.h * 0.6 ? undefined : pop.py + 28,

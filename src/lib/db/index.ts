@@ -111,9 +111,32 @@ async function init(): Promise<Driver> {
   const seeded = await driver.query<{ n: number }>('select count(*)::int as n from teams');
   if (seeded[0].n === 0 && process.env.GG_SKIP_DEMO_SEED !== 'true') {
     const { seedDemo } = await import('@/lib/db/demo-seed');
-    await seedDemo(driver);
+    await withStableIds(driver, () => seedDemo(driver));
   }
   return driver;
+}
+
+/**
+ * Runs the demo seed with predictable ids. A hosted demo can run on several
+ * server instances, each with its own embedded copy of the data, and links
+ * and sign-in cookies carry ids, so every copy has to agree on them. The
+ * seed's other values already come from a fixed random seed. The ids are
+ * shaped like version 4 UUIDs, since request validation checks that.
+ */
+export async function withStableIds(driver: Driver, fn: () => Promise<void>) {
+  const cols = await driver.query<{ s: string; t: string; c: string }>(
+    `select table_schema as s, table_name as t, column_name as c from information_schema.columns where column_default = 'gen_random_uuid()'`,
+  );
+  const setDefault = (expr: string) => cols.map((x) => `alter table "${x.s}"."${x.t}" alter column "${x.c}" set default ${expr};`).join('\n');
+  await driver.exec(`create sequence if not exists _demo_ids;
+    grant usage on sequence _demo_ids to public;
+    create or replace function _demo_uuid() returns uuid language sql as $$ select overlay(overlay(md5('gg-demo-' || nextval('_demo_ids')) placing '4' from 13) placing '8' from 17)::uuid $$;
+    ${setDefault('_demo_uuid()')}`);
+  try {
+    await fn();
+  } finally {
+    await driver.exec(setDefault('gen_random_uuid()'));
+  }
 }
 
 function driver(): Promise<Driver> {

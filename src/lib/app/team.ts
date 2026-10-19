@@ -23,6 +23,7 @@ export interface TeamCtx {
     zip: string | null;
     about: string;
     photoPath: string | null;
+    color: string | null;
     status: string;
     verificationStatus: string;
     verificationMethod: string | null;
@@ -75,6 +76,7 @@ export const loadTeamCtx = cache(async (teamId: string): Promise<TeamCtx> => {
       zip: row.zip,
       about: row.about,
       photoPath: row.photo_path,
+      color: row.color,
       status: row.status,
       verificationStatus: row.verification_status,
       verificationMethod: row.verification_method,

@@ -28,6 +28,8 @@ Where the spec left a question open, the build picked a default. Each one is lis
 - **Two Stripe webhook secrets.** Stripe signs platform events and connected-account events with different secrets, so the webhook accepts both (`STRIPE_WEBHOOK_SECRET` and `STRIPE_CONNECT_WEBHOOK_SECRET`).
 - **Delivery photos reach donors through signed links.** Stored files are private. Donors don't need an account, so the delivery email and their giving history use a link signed for that one item.
 - **Migrations are applied by `npm run db:migrate`,** which records them in `public._migrations`, the same table the demo database uses, so one set of SQL files serves both.
+- **Teams have a color.** Coaches pick one of twelve preset colors in Settings (all of them carry white text at 4.5:1 or better). The team page, player pages, the give form and the coach dashboard use it for the crest, meters and headers. Teams without one use the site blue.
+- **The hosted demo is a demo-only build.** Vercel preview deployments get the live Supabase settings, so a plain preview of a design would show real data. The "Demo site" job builds with `GG_FORCE_DEMO=1`, which `next.config.ts` bakes into the build and `src/lib/env.ts` uses to drop every database, Supabase, Stripe and email setting, so runtime settings can't switch it back. Each server instance seeds its own embedded copy of the data with fixed ids, so links and sign-in work whichever instance answers. Changes made on the demo site (a test gift, a new athlete) stay on the instance that took them and disappear when it is recycled.
 - **Demo mode is a real database.** PGlite runs the same migrations and policies as production, so the demo and the tests exercise the real security model rather than mocks.
 
 ## Copy rules
