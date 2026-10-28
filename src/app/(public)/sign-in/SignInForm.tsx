@@ -82,11 +82,15 @@ export function SignInForm({ next, initialEmail, demo }: { next: string; initial
       <div role="status" className="flex items-start gap-3 rounded-md bg-band p-4">
         <MailCheck aria-hidden size={22} className="mt-0.5 shrink-0 text-primary" />
         <p className="text-[15px] leading-[22px] text-ink-body">
-          We sent a link and a 6-digit code to <span className="font-medium text-ink">{email}</span>. Open the link on this device, or enter the code below.
-          {demo && (
+          {demo ? (
             <>
-              {' '}
-              In demo mode it&apos;s in the <Link href="/dev/outbox" target="_blank">outbox</Link>.
+              We sent a link and a 6-digit code to <span className="font-medium text-ink">{email}</span>. Open the link on this device, or enter the code below. In demo
+              mode it&apos;s in the <Link href="/dev/outbox" target="_blank">outbox</Link>.
+            </>
+          ) : (
+            <>
+              We sent a sign-in link to <span className="font-medium text-ink">{email}</span>. Open it on this device. If the email shows a 6-digit code, you can enter it
+              below instead.
             </>
           )}
         </p>

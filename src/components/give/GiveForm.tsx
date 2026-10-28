@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Banner } from '@/components/ui/Banner';
 import { Checkbox } from '@/components/ui/Field';
 import { cn } from '@/components/ui/cn';
-import { money, moneyWhole, quoteGift, parseDollarsToCents } from '@/lib/domain/money';
+import { money, moneyExact, moneyWhole, quoteGift, parseDollarsToCents } from '@/lib/domain/money';
 import { track } from '@/lib/analytics-client';
 import { GearIcon } from './GearIcon';
 import { SimulatedPay, type PayHandle } from './SimulatedPay';
@@ -99,7 +99,7 @@ export function GiveForm({
 
   const chips = useMemo(() => {
     const out: { id: string; label: string; choice: AmountChoice }[] = [];
-    if (target.kind === 'need' && Number.isFinite(maxCents) && maxCents > 0) out.push({ id: 'rest', label: `Rest of item (${moneyWhole(maxCents)})`, choice: { kind: 'rest' } });
+    if (target.kind === 'need' && Number.isFinite(maxCents) && maxCents > 0) out.push({ id: 'rest', label: `Rest of item (${moneyExact(maxCents)})`, choice: { kind: 'rest' } });
     for (const c of [2500, 5000, 10000]) {
       if (c <= maxCents && !(target.kind === 'need' && c === maxCents)) out.push({ id: String(c), label: moneyWhole(c), choice: { kind: 'fixed', cents: c } });
     }
@@ -121,7 +121,14 @@ export function GiveForm({
   const quote = amount > 0 ? quoteGift(amount, cover, config.fees) : null;
 
   const errors: Record<string, string> = {};
-  if (amount < config.minGiftCents) errors.amount = amount <= 0 ? 'Choose an amount.' : `The smallest gift is ${moneyWhole(config.minGiftCents)}.`;
+  // Paying off exactly what's left is allowed below the minimum, so the last few dollars of an
+  // item can be funded. Fees have to be covered, or they would eat most of a gift that small.
+  const finishesIt = Number.isFinite(maxCents) && amount > 0 && amount === maxCents;
+  if (amount < config.minGiftCents && !(finishesIt && cover)) {
+    errors.amount = amount <= 0 ? 'Choose an amount.'
+      : finishesIt ? `Keep "Cover fees" on to give less than ${moneyWhole(config.minGiftCents)}.`
+      : `The smallest gift is ${moneyWhole(config.minGiftCents)}.`;
+  }
   if (!EMAIL.test(email.trim())) errors.email = email.trim() ? 'Enter a valid email address, like name@example.com.' : 'Enter your email so we can send a receipt.';
   if (!name.trim()) errors.name = 'Enter your name. You can still give anonymously below.';
   const show = (f: string) => (submitted || touched[f]) && errors[f];
@@ -272,7 +279,7 @@ export function GiveForm({
             </span>
             <div>
               <p className="t-label text-[16px]">Any amount for {athleteName}</p>
-              <p className="t-caption">Spread across {recipientFirst}&apos;s open items, smallest first. {moneyWhole(maxCents)} left in total.</p>
+              <p className="t-caption">Spread across {recipientFirst}&apos;s open items, smallest first. {moneyExact(maxCents)} left in total.</p>
             </div>
           </div>
         )}
@@ -338,14 +345,14 @@ export function GiveForm({
                 />
               </div>
               <p id={`${uid}-other-help`} className="t-caption">
-                {Number.isFinite(maxCents) ? `Max ${moneyWhole(maxCents)} for this ${target.kind === 'need' ? 'item' : 'player'}.` : `At least ${moneyWhole(config.minGiftCents)}.`}
+                {Number.isFinite(maxCents) ? `Max ${moneyExact(maxCents)} for this ${target.kind === 'need' ? 'item' : 'player'}.` : `At least ${moneyWhole(config.minGiftCents)}.`}
               </p>
             </div>
           )}
           {overMax && (
             <div className="flex flex-col gap-1 rounded-md bg-band-blue px-4 py-3">
               <p className="text-[15px] text-ink-body">
-                This {target.kind === 'need' ? 'item' : 'player'} only needs {moneyWhole(maxCents)}. Anything extra can go to the team fund.
+                This {target.kind === 'need' ? 'item' : 'player'} only needs {moneyExact(maxCents)}. Anything extra can go to the team fund.
               </p>
               <Checkbox id={`${uid}-extra`} checked={sendExtra} onChange={(e) => setSendExtra(e.target.checked)} label="Send extra to the team fund" />
             </div>
@@ -443,7 +450,7 @@ export function GiveForm({
                   setCover(e.target.checked);
                   track('give_fees_toggled', { on: e.target.checked });
                 }}
-                label={`Cover fees so ${recipientFirst} gets the full ${moneyWhole(amount)}`}
+                label={`Cover fees so ${recipientFirst} gets the full ${moneyExact(amount)}`}
               />
             </dt>
             <dd className="tabular pt-0.5 text-ink">{quote && cover ? money(quote.feesAddedCents) : money(0)}</dd>

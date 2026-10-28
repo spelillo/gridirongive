@@ -3,6 +3,8 @@ import { placesFor } from '@/lib/app/places';
 import { AppShell, AppMain } from '@/components/app/AppShell';
 import { AppNav, type NavItem } from '@/components/app/AppNav';
 import { PlaceSwitcher } from '@/components/app/PlaceSwitcher';
+import { Banner } from '@/components/ui/Banner';
+import { mode } from '@/lib/env';
 
 export const metadata = { title: { template: '%s · Team · Gridiron Give', default: 'Team' } };
 
@@ -33,7 +35,15 @@ export default async function ManagerLayout({ children, params }: { children: Re
     <AppShell user={ctx.user} switcher={<PlaceSwitcher current={base} options={options} label="Switch team or player" />}>
       <div className="flex flex-1">
         <AppNav label="Team" items={items} />
-        <AppMain wide>{children}</AppMain>
+        <AppMain wide>
+          {/* Live site without an email provider: invites would look sent but never arrive. */}
+          {!mode.demo && mode.email === 'outbox' && (
+            <Banner tone="warn" rounded className="mb-6">
+              Email isn&apos;t set up on Gridiron Give yet, so invites, consent requests and gift notices are not being sent to families.
+            </Banner>
+          )}
+          {children}
+        </AppMain>
       </div>
     </AppShell>
   );

@@ -7,6 +7,7 @@ import {
   money,
   moneyWhole,
   moneyWholeUp,
+  moneyExact,
   percentFunded,
   remainingCents,
   parseDollarsToCents,
@@ -137,6 +138,11 @@ describe('money formatting', () => {
     expect(moneyWholeUp(30_001)).toBe('$301');
     expect(moneyWholeUp(30_000)).toBe('$300');
     expect(moneyWhole(150_000_00)).toBe('$150,000');
+  });
+  it('moneyExact drops .00 but keeps cents', () => {
+    expect(moneyExact(30_000)).toBe('$300');
+    expect(moneyExact(3_750)).toBe('$37.50');
+    expect(moneyExact(300)).toBe('$3');
   });
 });
 

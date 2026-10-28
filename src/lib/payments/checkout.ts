@@ -2,7 +2,7 @@ import 'server-only';
 import { z } from 'zod';
 import { sys } from '@/lib/db';
 import { env, mode, paymentsAvailable } from '@/lib/env';
-import { quoteGift, type FeeQuote } from '@/lib/domain/money';
+import { moneyExact, quoteGift, type FeeQuote } from '@/lib/domain/money';
 import { MIN_GIFT_CENTS } from '@/config/fees';
 import { cleanUserText } from '@/lib/domain/text';
 import { needRemaining } from '@/lib/domain/allocation';
@@ -55,7 +55,11 @@ export async function createGift(req: GiftRequest, donorUserId: string | null): 
     return { ok: true, donationId: existing.id, quote, clientSecret, simulated: mode.payments !== 'stripe' };
   }
 
-  if (req.amountCents < MIN_GIFT_CENTS) return { ok: false, error: 'The smallest gift is $5.', field: 'amount' };
+  // Below the minimum is allowed only when it pays off exactly what's left, with
+  // fees covered, so the last few dollars of an item can always be funded.
+  const tooSmall = (left?: number) => req.amountCents < MIN_GIFT_CENTS && !(req.amountCents === left && req.coverFees);
+  const TOO_SMALL = { ok: false as const, error: `The smallest gift is $${MIN_GIFT_CENTS / 100}.`, field: 'amount' };
+  if (req.target === 'team_fund' && tooSmall()) return TOO_SMALL;
 
   const needs = await sys.query<any>(
     `select n.id, n.athlete_id, n.kind, n.price_cents, n.raised_cents, n.status, n.sort, a.status as athlete_status
@@ -79,8 +83,9 @@ export async function createGift(req: GiftRequest, donorUserId: string | null): 
     if (!n || !live(n)) return { ok: false, error: "That item isn't available anymore." };
     const left = needRemaining(state(n));
     if (left <= 0) return { ok: false, error: 'That item was just fully funded.', field: 'amount' };
+    if (tooSmall(left)) return TOO_SMALL;
     athleteId = n.athlete_id;
-    if (amount > left && !req.sendExtraToFund) return { ok: false, error: `This item only needs $${Math.floor(left / 100)}. Lower the amount or send the extra to the team fund.`, field: 'amount' };
+    if (amount > left && !req.sendExtraToFund) return { ok: false, error: `This item only needs ${moneyExact(left)}. Lower the amount or send the extra to the team fund.`, field: 'amount' };
     lines = [{ needId: n.id, athleteId: n.athlete_id, requestedCents: Math.min(amount, left) }];
     if (amount > left) lines.push({ needId: fund.id, athleteId: null, requestedCents: amount - left });
   } else if (req.target === 'fund_rest') {
@@ -91,6 +96,7 @@ export async function createGift(req: GiftRequest, donorUserId: string | null): 
     lines = picked.map((n) => ({ needId: n.id, athleteId: n.athlete_id, requestedCents: needRemaining(state(n)) }));
     const sum = lines.reduce((s, l) => s + l.requestedCents, 0);
     if (amount !== sum) return { ok: false, error: 'The amounts changed while you were giving. Check the total and try again.', field: 'amount' };
+    if (tooSmall(sum)) return TOO_SMALL;
   } else {
     // Any amount toward an athlete: spread across their open needs, smallest first.
     const a = await sys.one<any>(`select id, status from athletes where id = $1 and team_id = $2`, [req.athleteId, team.id]);
@@ -98,7 +104,8 @@ export async function createGift(req: GiftRequest, donorUserId: string | null): 
     athleteId = a.id;
     const left = needs.filter((n) => n.athlete_id === a.id).reduce((s, n) => s + needRemaining(state(n)), 0);
     if (left <= 0) return { ok: false, error: 'Everything on this list was just funded.' };
-    if (amount > left && !req.sendExtraToFund) return { ok: false, error: `This player only needs $${Math.floor(left / 100)}. Lower the amount or send the extra to the team fund.`, field: 'amount' };
+    if (tooSmall(left)) return TOO_SMALL;
+    if (amount > left && !req.sendExtraToFund) return { ok: false, error: `This player only needs ${moneyExact(left)}. Lower the amount or send the extra to the team fund.`, field: 'amount' };
     lines = [{ needId: null, athleteId: a.id, requestedCents: Math.min(amount, left) }];
     if (amount > left) lines.push({ needId: fund.id, athleteId: null, requestedCents: amount - left });
   }
