@@ -72,6 +72,11 @@ export function money(cents: number): string {
   return usd.format(cents / 100);
 }
 
+/** $140 or $37.50: an exact amount someone will be charged, without ".00" on whole dollars. */
+export function moneyExact(cents: number): string {
+  return cents % 100 === 0 ? usdWhole.format(cents / 100) : usd.format(cents / 100);
+}
+
 /** $140: public meters. Rounded down so a total never looks bigger than it is. */
 export function moneyWhole(cents: number): string {
   return usdWhole.format(Math.floor(cents / 100));

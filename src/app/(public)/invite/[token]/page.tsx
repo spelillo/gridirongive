@@ -106,7 +106,9 @@ export default async function InvitePage({ params, searchParams }: Props) {
               <h2 id="signin-h" className="t-subhead">
                 Sign in to continue
               </h2>
-              <p className="t-caption">We&apos;ll email a link and a 6-digit code. The code works on any device.</p>
+              <p className="t-caption">
+                {mode.demo ? "We'll email a link and a 6-digit code. The code works on any device." : "We'll email you a sign-in link. Open it on this device."}
+              </p>
             </div>
             <SignInForm next={`/invite/${token}?as=${chosen}`} initialEmail={chosen === inv.role ? inv.email : ''} demo={mode.demo} />
           </section>

@@ -119,6 +119,20 @@ describe('createGift + markDonationSucceeded', () => {
     ]);
   });
 
+  it('takes less than $5 when it finishes an item and fees are covered', async () => {
+    const n = await freshNeed('Lace kit', 2_000);
+    await giveAndSucceed({ needIds: [n], amountCents: 1_700 });
+    expect(await createGift(gift({ needIds: [n], amountCents: 200 }), null)).toEqual({ ok: false, error: 'The smallest gift is $5.', field: 'amount' });
+    expect(await createGift(gift({ needIds: [n], amountCents: 300, coverFees: false }), null)).toEqual({ ok: false, error: 'The smallest gift is $5.', field: 'amount' });
+    await giveAndSucceed({ needIds: [n], amountCents: 300 });
+    expect(await need(n)).toEqual({ raised_cents: 2_000, status: 'funded' });
+  });
+
+  it('says what is left to the cent', async () => {
+    const n = await freshNeed('Wristband', 1_250);
+    expect(await createGift(gift({ needIds: [n], amountCents: 5_000 }), null)).toMatchObject({ ok: false, error: expect.stringContaining('only needs $12.50.') });
+  });
+
   it('overflows to the team fund when the need filled up while paying', async () => {
     const n = await freshNeed('Back plate', 3_000);
     const first = await createGift(gift({ needIds: [n], amountCents: 3_000 }), null);

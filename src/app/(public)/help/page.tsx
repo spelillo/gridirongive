@@ -56,7 +56,7 @@ export default function HelpPage() {
           <p>{feeFormula()}.</p>
           <p>
             You can cover the fees at checkout so the player gets the full amount. That box is on by default and shows the exact amount. The smallest gift is{' '}
-            {money(MIN_GIFT_CENTS).replace(/\.00$/, '')}. <Link href="/for-teams#fees">See a worked example</Link>.
+            {money(MIN_GIFT_CENTS).replace(/\.00$/, '')}, unless less than that is all an item still needs. <Link href="/for-teams#fees">See a worked example</Link>.
           </p>
         </Disclosure>
         <Disclosure summary="Where does my money go?">
